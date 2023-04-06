@@ -75,7 +75,6 @@ a:hover {
 a {
     color: #a6a4ff;
     text-decoration: none;
-    font-size: 22px;
     -o-transition: all .2s ease;
     -webkit-transition: all .2s ease;
     -moz-transition: all .2s ease;
@@ -83,7 +82,7 @@ a {
 }
 
 .pages > a {
-    color: #ab9a9a;
+    font-size: 22px;
 }
 
 img {
