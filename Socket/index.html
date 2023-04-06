@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>ѕример чата с веб-сокетом</title>
+</head>
+<body>
+  <script>
+    let ws = new WebSocket("ws://localhost:8080");
+    // выводим новые сообщени€ в консоль
+    ws.onmessage = ({data}) => {
+      console.log(data);
+    }
+    // отправл€ем сообщение 
+    ws.onopen = () => ws.send('Text');
+  </script>
+</body>
+</html>

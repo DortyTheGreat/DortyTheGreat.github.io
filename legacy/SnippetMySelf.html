@@ -1,0 +1,139 @@
+DebugInfo:
+UUID;
+Meta;
+Meta2;
+Meta3;
+Container
+[UTypeDef=1]<DoRTY_Cucumber>
+//Revision Dorty.Gosunov Standalone v1 Made At 01.04.2021
+
+#include <string.h>
+#include <winsock2.h>
+#include <windows.h>
+#include <iostream>
+#include <vector>
+#include <locale>
+#include <sstream>
+using namespace std;
+#pragma comment(lib,"ws2_32.lib")
+
+
+
+int main( void ){
+
+WSADATA wsaData;
+SOCKET Socket;
+SOCKADDR_IN SockAddr;
+int lineCount=0;
+int rowCount=0;
+struct hostent *host;
+locale local;
+char buffer[10000];
+int i = 0 ;
+int nDataLength;
+string website_HTML;
+
+
+
+
+// website url
+string url = "dorty.gosunov.ru";
+
+string Suppa = "Snippet1.html";
+
+cout << "Doing: " << url << " {/} " << Suppa;
+//HTTP GET
+string get_http = "GET /"+Suppa+" HTTP/1.1\r\nHost: " + url + "\r\nConnection: close\r\n\r\n";
+cout << endl << "ACTUAL: " << get_http;
+
+    if (WSAStartup(MAKEWORD(2,2), &wsaData) != 0){
+        cout << "WSAStartup failed.\n";
+        system("pause");
+        //return 1;
+    }
+
+    Socket=socket(AF_INET,SOCK_STREAM,IPPROTO_TCP);
+    host = gethostbyname(url.c_str());
+
+    SockAddr.sin_port=htons(80);
+    SockAddr.sin_family=AF_INET;
+    SockAddr.sin_addr.s_addr = *((unsigned long*)host->h_addr);
+
+    if(connect(Socket,(SOCKADDR*)(&SockAddr),sizeof(SockAddr)) != 0){
+        cout << "Could not connect";
+        system("pause");
+        //return 1;
+    }
+
+    // send GET / HTTP
+    send(Socket,get_http.c_str(), strlen(get_http.c_str()),0 );
+
+    // recieve html
+    while ((nDataLength = recv(Socket,buffer,10000,0)) > 0){
+        int i = 0;
+        while (buffer[i] >= 32 || buffer[i] == '\n' || buffer[i] == '\r'){
+
+            website_HTML+=buffer[i];
+            i += 1;
+        }
+    }
+
+    //closesocket(Socket);
+    WSACleanup();
+
+    // Display HTML source
+    cout<< endl << endl<<website_HTML << endl << "_______" << endl;;
+
+    string karret="";
+    bool flag = 0;
+    int counter = 0;
+    int AmountOfMetas = 4;
+
+    string Meta[10];
+
+    string Separator = "++";
+    string filter = "[UTypeDef=1]<DoRTY_Cucumber>";
+
+    for(int i=0;i<website_HTML.size();i++){
+
+        if( website_HTML[i] == '\n' || (i==website_HTML.size()-1)){
+                if(flag){
+
+
+                if(counter < AmountOfMetas){
+                Meta[counter] = karret;
+                }else{
+                cout << "Data " <<counter-AmountOfMetas <<":{" <<  karret << "}" << endl;
+                }
+
+                karret="";counter++;
+                }else{
+                if(karret == filter){
+                    flag=1;
+                    cout <<endl << "Filter Has Been Found \/  \/  \/ " << endl << endl;
+                }
+
+            cout << "PreData:{" <<karret <<"}" << endl;
+            karret="";
+                }
+        }else{
+        if(website_HTML[i] != '\r') {karret+=website_HTML[i];}
+        }
+    }
+
+    // pause
+
+
+    cout << endl << "META:" << endl;
+    for(int i=0;i<AmountOfMetas;i++){
+        cout <<"Meta " << i << ":{" << Meta[i] <<"}" << endl;
+    }
+
+    cout<<"\n\nPress ANY key to close.\n\n";
+    cin.ignore(); cin.get();
+
+
+
+
+ return 0;
+}

@@ -1,0 +1,101 @@
+@import url('https://fonts.googleapis.com/css?family=Roboto:300,500');
+@import url('https://fonts.googleapis.com/css?family=Poiret+One');
+
+body, html {
+    height: 100%;
+    margin: 0;
+}
+
+h1 {
+    padding-top: 40px;
+    font-family: 'Poiret One', sans-serif;
+    margin-left: 40px;
+    font-size: 70px;
+    color: #fafafa;
+}
+
+h2 {
+    padding-top: 40px;
+    font-family: 'Poiret One', sans-serif;
+    margin-left: 40px;
+    font-size: 70px;
+    color: #050505;
+}
+
+.contact {
+    padding-top: 40px;
+    font-family: 'Poiret One', sans-serif;
+    margin-left: 40px;
+    font-size: 50px;
+    color: #050505;
+}
+
+hr {
+    background-color: #a6a4ff;
+    float: left;
+    margin-top: -10px;
+    margin-left: 40px;
+    height: 5px;
+    width: 200px;
+    border: none;
+}
+
+header {
+    margin-top: -50px;
+    background-color: #222222;
+    height: 250px;
+}
+
+.content {
+    background-color: #fafafa;
+    display: flex;
+    flex-direction: column;
+}
+
+.row {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-around;
+    margin-top: 50px;
+}
+
+footer {
+    height: 80%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-around;
+}
+
+a:hover {
+    opacity: .5;
+    letter-spacing: 1.5px;
+}
+
+a {
+    color: #a6a4ff;
+    text-decoration: none;
+    font-size: 22px;
+    -o-transition: all .2s ease;
+    -webkit-transition: all .2s ease;
+    -moz-transition: all .2s ease;
+    transition: all .2s ease;
+}
+
+.pages > a {
+    color: #ab9a9a;
+}
+
+img {
+    width: 500px;
+    height: 300px;
+    -o-transition: all .3s ease;
+    -webkit-transition: all .3s ease;
+    -moz-transition: all .3s ease;
+    transition: all .3s ease;
+}
+
+img:hover {
+    box-shadow: 0 0 40px #222222;
+    transform: scale(1.03);
+}
