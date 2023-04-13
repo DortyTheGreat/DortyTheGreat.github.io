@@ -2,18 +2,185 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <link rel="stylesheet" href="css/style4.css">
-    <title>Document</title>
+    <link rel="stylesheet" href="css/style2.css">
+
+    <style>
+        #customers {
+        font-family: Arial, Helvetica, sans-serif;
+        border-collapse: collapse;
+        width: 100%;
+        }
+
+        #customers td, #customers th {
+            border: 1px solid #ddd;
+            padding: 8px;
+        }
+
+        #customers tr:nth-child(even){background-color: #f2f2f2;}
+
+        #customers tr:hover {background-color: #ddd;}
+
+        #customers th {
+            padding-top: 12px;
+            padding-bottom: 12px;
+            text-align: left;
+            background-color: #344D45;
+            color: white;
+        }
+
+
+    </style>
+
+    <title>Ценовая Политика</title>
 </head>
 <body>
     <header>
-        <h1>О сайте</h1>
+        <h1 class='pages'>Ценовая Политика
+            <a href="index.html">НА ГЛАВНУЮ</a>
+            <a href="portfolio.html">ПОРТФОЛИО</a>
+			<a href="contacts.html">КОНТАКТЫ</a>
+            <a href="about.html" class="margin">О КОМПАНИИ</a>
+            <a href="price.html" class="margin">ЦЕНОВАЯ ПОЛИТИКА</a>
+        </h1>
         <hr>
     </header>
     <div class="content">
-        <h2>Бла-бла-бла</h2>
+        <h2>Архитектурные пакеты</h2>
+
+        <table id="customers">
+            <tr>
+                <th>Состав Архитектурного проекта</th>
+                <th>ЭКСПРЕСС</th>
+                <th>ОСНОВНОЙ</th>
+                <th>КОМПЛЕКСНЫЙ</th>
+            </tr>
+            <tr>
+                <td>Генплан участка (оптимальное размещение дома на участке)</td>
+                <td>ДА</td>
+                <td>ДА</td>
+                <td>ДА</td>
+            </tr>
+            <tr>
+                <td>Поэтажные планы (планировки каждого этажа)</td>
+                <td>ДА</td>
+                <td>ДА</td>
+                <td>ДА</td>
+            </tr>
+            <tr>
+                <td>Цветовое решение фасадов с указанием примененных материалов</td>
+                <td>ДА</td>
+                <td>ДА</td>
+                <td>ДА</td>
+            </tr>
+            <tr>
+                <td>Фасады с отметками высот, размерами и привязками по расположению дверных и оконных проемов</td>
+                <td>ДА</td>
+                <td>ДА</td>
+                <td>ДА</td>
+            </tr>
+            <tr>
+                <td>План кровли</td>
+                <td>ДА</td>
+                <td>ДА</td>
+                <td>ДА</td>
+            </tr>
+            <tr>
+                <td>Архитектурные разрезы</td>
+                <td>ДА</td>
+                <td>ДА</td>
+                <td>ДА</td>
+            </tr>
+            <tr>
+                <td>Объемные эскизы</td>
+                <td>ДА</td>
+                <td>ДА</td>
+                <td>ДА</td>
+            </tr>
+            <tr>
+                <td>Спецификация заполнения дверных и оконных проемов</td>
+                <td></td>
+                <td>ДА</td>
+                <td>ДА</td>
+            </tr>
+            <tr>
+                <td>Ведомость отделки фасадов</td>
+                <td></td>
+                <td>ДА</td>
+                <td>ДА</td>
+            </tr>
+            <tr>
+                <td>3Д-визуализация (изображение нескольких ракурсов)</td>
+                <td></td>
+                <td>ДА</td>
+                <td>ДА</td>
+            </tr>
+            <tr>
+                <td>Функциональная планировка участка, разработка индивидуальных объектов малой архитектуры (беседки, арки, садовая мебель и т.д.)</td>
+                <td></td>
+                <td></td>
+                <td>ДА</td>
+            </tr>
+
+            <tr class = 'cost'>
+                <td>Стоимость</td>
+                <td> 1000 р/м<sup>2</sup> </td>
+                <td> 2000 р/м<sup>2</sup> </td>
+                <td>Индивидуальный расчёт</td>
+            </tr>
+
+
+
+        </table>
+
+        <h2>Калькулятор цены</h2>
+        <div> Вы можете выбрать лишь некоторые услуги, тем самым подстроив план под себя. Стоимость плана будет удтверждаться в дальнейшем, но Вы сможете узнать приблизительную стоимость проекта </div>
+
+        <form action="/action_page.php">
+            <input type="checkbox" id="option1" name="vehicle1" value="Bike">
+            <label for="option1"> Спецификация заполнения дверных и оконных проемов</label><br>
+            <input type="checkbox" id="option2" name="vehicle2" value="Car">
+            <label for="option2"> Ведомость отделки фасадов</label><br>
+            <input type="checkbox" id="option3" name="vehicle2" value="Car">
+            <label for="option3"> 3Д-визуализация (изображение нескольких ракурсов)</label><br>
+            <input type="checkbox" id="option4" name="vehicle3" value="Boat">
+            <label for="option4"> Функциональная планировка участка</label><br>
+            <label> Площадь: </label> <input type="number" id='surface' min='5' value="" placeholder="Площадь в кв. м"><br>
+            <label> ИТОГОВАЯ СТОИМОСТЬ </label>
+            <label> От </label> <input type="text" value="" id="start" placeholder="0 p." disabled> <label> До </label> <input type="text" value="" id='end' placeholder="0 p." disabled>
+
+        </form>
+
+
+
         <p>
         </p>
     </div>
 </body>
+
+
+<script>
+
+    function Bobbi(){
+        console.log(document.getElementById("option1").checked)
+        let approx = (1000 + (+document.getElementById("option1").checked) * 350)
+        approx += (+document.getElementById("option2").checked) * 350
+        approx += (+document.getElementById("option3").checked) * 400
+        approx += (+document.getElementById("option4").checked) * 500
+        console.log(approx)
+        approx *= parseInt(document.getElementById("surface").value)
+        console.log(approx)
+        document.getElementById("start").value = parseInt(approx * 0.9) + ' p.'
+        document.getElementById("end").value = parseInt(approx * 1.1) + ' p.'
+
+    }
+
+    option1.oninput = Bobbi;
+    option2.oninput = Bobbi;
+    option3.oninput = Bobbi;
+    option4.oninput = Bobbi;
+    surface.oninput = Bobbi;
+
+</script>
+
+
 </html>
