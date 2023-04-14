@@ -1,12 +1,23 @@
-function Bobbi(){
-	let huh2 = parseInt(document.getElementById("In2").value,10);
-	let huh = parseInt(document.getElementById("In1").value,huh2);
-	let huh3 = parseInt(document.getElementById("In3").value,10);
-	document.getElementById("In4").value = huh.toString(huh3);
+
+function parseBigInt(strin, base){
+	let ret = 0n;
+	let powers = 1n;
+	for(let i = strin.length - 1; i > -1; --i){
+		ret += BigInt(parseInt(strin[i],base)) * powers;
+		powers *= BigInt(base);
+	}
+	return ret;
 }
 
-In1.oninput = Bobbi;
-In2.oninput = Bobbi;
-In3.oninput = Bobbi;
+function Bobbi(){
+	let from_base = parseInt(document.getElementById("from_base").value,10);
+	let to_base = parseInt(document.getElementById("to_base").value,10);
+	let num = parseBigInt(document.getElementById("num").value,from_base);
+	document.getElementById("res").value = num.toString(to_base);
+}
+
+from_base.oninput = Bobbi;
+to_base.oninput = Bobbi;
+num.oninput = Bobbi;
 
 //setInterval(Bobbi,1000);
