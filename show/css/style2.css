@@ -10,7 +10,7 @@ h1 {
     padding-top: 40px;
     font-family: 'Poiret One', sans-serif;
     margin-left: 40px;
-    font-size: 70px;
+    font-size: 5vw;
     color: #fafafa;
 }
 
@@ -85,7 +85,7 @@ footer {
 }
 
 a:hover {
-    opacity: .5;
+    opacity: .7;
     letter-spacing: 1.5px;
 }
 
@@ -143,6 +143,34 @@ a:hover {
   background-color: #e9ecef;
 }
 
+@keyframes start {
+    0% {
+        transform: scaleX(1);
+    }
+
+    100% {
+        transform: scaleX(6);
+        animation-play-state: paused;
+    }
+}
+
+@keyframes start2 {
+    0% {
+        opacity: 0;
+    }
+
+    100% {
+        opacity: 1;
+        animation-play-state: paused;
+    }
+}
+.col-href{
+    font-size: 3vw;
+}
+
+.col-href > a{
+    font-size: 1.5vw;
+}
 a {
     color: #a6a4ff;
     text-decoration: none;
@@ -153,7 +181,7 @@ a {
 }
 
 .pages > a {
-    font-size: 22px;
+    font-size: 1.7vw;
 }
 
 img {
