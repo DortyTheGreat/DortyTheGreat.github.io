@@ -10,7 +10,7 @@ h1 {
     padding-top: 40px;
     font-family: 'Poiret One', sans-serif;
     margin-left: 40px;
-    font-size: 5vw;
+    font-size: 3vw;
     color: #fafafa;
 }
 
@@ -18,7 +18,7 @@ h2 {
     padding-top: 40px;
     font-family: 'Poiret One', sans-serif;
     margin-left: 40px;
-    font-size: 70px;
+    font-size: 6vw;
     color: #050505;
 }
 
@@ -50,17 +50,17 @@ h2 {
 hr {
     background-color: #a6a4ff;
     float: left;
-    margin-top: -10px;
-    margin-left: 40px;
-    height: 5px;
-    width: 200px;
+    margin-top: -1vw;
+    margin-left: 4vw;
+    height: 0.5vw;
+    width: 20vw;
     border: none;
 }
 
 header {
     margin-top: -50px;
     background-color: #222222;
-    height: 250px;
+    height: 15vw;
 }
 
 .content {
@@ -181,7 +181,7 @@ a {
 }
 
 .pages > a {
-    font-size: 1.7vw;
+    font-size: 1.6vw;
 }
 
 img {
