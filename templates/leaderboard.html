@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+
+{% block title %}
+Leaderboard
+{% endblock %}
+
+{% block content %}
+<h3>
+    <a href="/">← Обратно в игру </a>
+</h3>
+<table>
+    <caption>
+        <h1>Топ игроков по {{MSG}}</h1>
+    </caption>
+    <tbody>
+        {% for player in top %}
+            <tr>
+                <th>{{ player['name'] }}</th>
+                <td>{{ player[sort_type] }}</td>
+            </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+{% endblock %}

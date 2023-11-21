@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+
+{% block title %}
+Login
+{% endblock %}
+
+{% block content %}
+<h1>Войти</h1>
+<form method="post">
+	<p><input type=text name=username>
+	<p><input type=text name=pwd>
+	<p><input type=submit value=Login>
+</form>
+    
+
+<small>Не зарегистрированы? <a href="/register">Регистрация</a></small>
+{% endblock %}

@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+
+{% block title %}
+Fight
+{% endblock %}
+
+{% block content %}
+<h3>
+    <a href="/">← Обратно в игру </a>
+</h3>
+<table>
+    <caption>
+        <h1>Топ игроков</h1>
+    </caption>
+    <tbody>
+        {% for player in top %}
+            <tr>
+                <th>{{ player['name'] }}</th>
+                <td>{{ player['exp'] }}</td>
+                <td>
+                    <a href="/fight?enemy={{ player['name'] }}">
+                        <button> Бой </button>
+                    </a>
+                </td>
+            </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<a href="/arena"> <button id="refresh"> Обновить </button>  </a>
+
+{% endblock %}

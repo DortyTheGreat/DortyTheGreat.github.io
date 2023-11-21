@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+
+{% block title %}
+Register
+{% endblock %}
+
+{% block content %}
+<h1>Зарегистрироваться</h1>
+<form action="" method="post">
+    <input type="text" name="login" placeholder="John" required>
+    <input type="password" name="pass" placeholder="123456" required>
+    <input type="submit">
+</form>
+<small>Уже зарегистрированы? <a href="/user/login">Войти</a></small>
+{% endblock %}

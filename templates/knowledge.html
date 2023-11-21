@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+
+{% block title %}
+Fight
+{% endblock %}
+
+{% block content %}
+<h3>
+    <a href="/">← Обратно в игру </a>
+</h3>
+<table>
+    <caption>
+        <h1>Изучение. <br>Ваш опыт = {{exp}} </h1>
+    </caption>
+    <tbody>
+
+        <tr>
+            <th>Множитель получаемого опыта</th>
+            <td>  {{E1}}  </td>
+            <td> <a href="/knowledge"> <button id="b1"> {{C1}} </button> </a> </td>
+        </tr>
+        <tr>
+            <th>Увеличить HP</th>
+            <td>  +{{E2}}  </td>
+            <td> <a href="/knowledge">  <button id="b2"> {{C2}} </button> </a>  </td>
+        </tr>
+
+        <tr>
+            <th>Увеличить ATK</th>
+            <td>  +{{E3}}  </td>
+            <td> <a href="/knowledge"> <button id="b3"> {{C3}} </button> </a> </td>
+        </tr>
+
+        <tr>
+            <th>Увеличить DEF</th>
+            <td>  +{{E4}}  </td>
+            <td> <a href="/knowledge"> <button id="b4"> {{C4}} </button> </a> </td>
+        </tr>
+
+    </tbody>
+</table>
+
+<script>
+    function click1() {
+        fetch('/knowledge?learn=exp');
+    }
+    function click2() {
+        fetch('/knowledge?learn=hp');
+    }
+    function click3() {
+        fetch('/knowledge?learn=atk');
+    }
+    function click4() {
+        fetch('/knowledge?learn=def');
+    }
+
+    let btn1 = document.getElementById('b1');
+    let btn2 = document.getElementById('b2');
+    let btn3 = document.getElementById('b3');
+    let btn4 = document.getElementById('b4');
+
+    btn1.addEventListener('click', click1)
+    btn2.addEventListener('click', click2)
+    btn3.addEventListener('click', click3)
+    btn4.addEventListener('click', click4)
+</script>
+
+{% endblock %}

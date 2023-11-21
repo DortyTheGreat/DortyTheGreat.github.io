@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+
+{% block title %}
+Play
+{% endblock %}
+
+{% block content %}
+<h1>Привет, {{ user }}</h1>
+<table>
+    <caption>
+        <h3>Статистика</h3>
+    </caption>
+    <tbody>
+        <tr>
+            <th>Имя</th>
+            <td>{{ user }}</td>
+        </tr>
+        <tr>
+            <th>Опыт</th>
+            <td id="exp_field">
+                {{ exp }}
+            </td>
+        </tr>
+        <tr>
+            <th>Уровень</th>
+            <td id="level_field">
+                {{ level }}
+            </td>
+        </tr>
+        <tr>
+            <th>Золото</th>
+            <td id="gold_field">
+                {{ gold }}
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+<button id="button">
+    кликни
+</button>
+<ul>
+    <li>
+        <a href="/leaderboard?sort_by=exp">Топ игроков по опыту</a>
+    </li>
+    <li>
+        <a href="/leaderboard?sort_by=gold">Топ игроков по золоту</a>
+    </li>
+
+    <li>
+        <a href="/arena">Драка</a>
+    </li>
+
+    <li>
+        <a href="/knowledge">Знания</a>
+    </li>
+
+    <li>
+        <a href="/user/logout">Выйти</a>
+    </li>
+
+
+
+</ul>
+
+<script>
+    let btn = document.getElementById('button');
+
+    function able_button() {
+        btn.disabled = false;
+    }
+
+    async function click() {
+        btn.disabled = true;
+        setTimeout(able_button, 750)
+        let response = await fetch('/click');
+        let json = await response.json();
+
+        let exp_field = document.getElementById('exp_field');
+        let level_field = document.getElementById('level_field');
+        let gold_field = document.getElementById('gold_field');
+
+        exp_field.innerText = json['exp']
+        level_field.innerText = json['level']
+        gold_field.innerText = json['gold']
+    }
+
+    btn.addEventListener('click', click)
+</script>
+{% endblock %}
