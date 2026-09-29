@@ -1,0 +1,2350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>End Ships: elytra finder and route planner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Pixelify+Sans:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f1edf9;
+  --panel: #fbf9ff;
+  --panel-2: #ebe5f6;
+  --field: #ffffff;
+  --ink: #1b1330;
+  --muted: #635a7c;
+  --line: #d6cce9;
+  --accent: #55299f;
+  --accent-ink: #ffffff;
+  --accent-soft: #e3d9f5;
+  --focus: #8b5cf6;
+  --danger: #b3261e;
+  --ok: #1d7448;
+  --shadow: 0 1px 0 rgba(27, 19, 48, .04);
+  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #100b1c;
+    --panel: #19122e;
+    --panel-2: #231a3d;
+    --field: #130e24;
+    --ink: #ece7f8;
+    --muted: #a397c2;
+    --line: #33274f;
+    --accent: #e8de9e;
+    --accent-ink: #1a1230;
+    --accent-soft: #3a2f5c;
+    --focus: #c8a9ff;
+    --danger: #ff8a80;
+    --ok: #7ddba4;
+    --shadow: none;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #100b1c;
+  --panel: #19122e;
+  --panel-2: #231a3d;
+  --field: #130e24;
+  --ink: #ece7f8;
+  --muted: #a397c2;
+  --line: #33274f;
+  --accent: #e8de9e;
+  --accent-ink: #1a1230;
+  --accent-soft: #3a2f5c;
+  --focus: #c8a9ff;
+  --danger: #ff8a80;
+  --ok: #7ddba4;
+  --shadow: none;
+  color-scheme: dark;
+}
+
+html { scroll-padding-top: env(safe-area-inset-top, 0px); -webkit-text-size-adjust: 100%; }
+* , *::before, *::after { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 15px/1.5 "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+button, input, select, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+.page { max-width: 1360px; margin: 0 auto; padding: 22px 20px 72px; }
+
+.head { margin: 0 0 20px; display: flex; gap: 16px; justify-content: space-between; align-items: flex-start; }
+.lang { display: inline-grid; grid-auto-flow: column; gap: 3px; padding: 3px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); flex: none; }
+.lang button { border: 0; background: none; padding: 5px 11px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px; }
+.lang button[aria-pressed=true] { background: var(--accent); color: var(--accent-ink); }
+.head h1 {
+  margin: 0;
+  font-family: "Pixelify Sans", "IBM Plex Sans", system-ui, sans-serif;
+  font-weight: 700;
+  font-size: clamp(30px, 4.6vw, 46px);
+  line-height: 1.05;
+  letter-spacing: .01em;
+}
+.head p { margin: 8px 0 0; color: var(--muted); max-width: 66ch; }
+
+.layout { display: grid; grid-template-columns: minmax(300px, 360px) minmax(0, 1fr); gap: 22px; align-items: start; }
+@media (max-width: 920px) { .layout { grid-template-columns: minmax(0, 1fr); } }
+
+/* ---------- форма ---------- */
+.controls {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+}
+.controls fieldset { border: 0; margin: 0; padding: 16px 18px 18px; min-width: 0; }
+.controls fieldset + fieldset { border-top: 1px solid var(--line); }
+.controls legend { padding: 0; font-weight: 600; font-size: 15px; float: left; width: 100%; margin-bottom: 10px; }
+.controls legend + * { clear: both; }
+.f { display: block; margin: 0 0 12px; }
+.f:last-child { margin-bottom: 0; }
+.l { display: block; font-size: 13.5px; margin-bottom: 4px; }
+.hint { display: block; margin-top: 4px; font-size: 12.5px; color: var(--muted); line-height: 1.4; }
+.hint.warn { color: var(--danger); }
+input[type=text], input[type=number], select {
+  width: 100%; height: 38px; padding: 0 10px;
+  background: var(--field); border: 1px solid var(--line); border-radius: 6px;
+}
+input[type=number] { -moz-appearance: textfield; appearance: textfield; }
+input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+input:disabled, select:disabled { opacity: .5; }
+input[aria-invalid=true] { border-color: var(--danger); }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.inline { display: flex; gap: 8px; align-items: center; }
+.inline > input[type=number] { flex: 1 1 auto; min-width: 0; }
+.check { display: flex; gap: 9px; align-items: flex-start; margin: 0 0 10px; cursor: pointer; line-height: 1.35; }
+.check:last-child { margin-bottom: 0; }
+.check input { margin: 2px 0 0; width: 17px; height: 17px; accent-color: var(--accent); flex: none; }
+.check small { display: block; color: var(--muted); font-size: 12.5px; }
+
+.seg { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--line); border-radius: 8px; padding: 3px; background: var(--field); gap: 3px; }
+.seg label { position: relative; text-align: center; }
+.seg input { position: absolute; opacity: 0; inset: 0; cursor: pointer; }
+.seg span { display: block; padding: 7px 8px; border-radius: 6px; font-weight: 500; font-size: 14px; }
+.seg input:checked + span { background: var(--accent); color: var(--accent-ink); }
+.seg input:focus-visible + span { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.btn {
+  appearance: none; cursor: pointer; border: 1px solid var(--line); background: var(--field);
+  border-radius: 6px; padding: 6px 11px; font-weight: 500; font-size: 13.5px; line-height: 1.2;
+}
+.btn:hover { border-color: var(--muted); }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); padding: 10px 16px; font-size: 15px; font-weight: 600; }
+.btn.primary:hover { filter: brightness(1.06); }
+.btn.link { border: 0; background: none; padding: 0; color: var(--accent); text-decoration: underline; text-underline-offset: 3px; font-size: 13px; }
+:root:not([data-theme="light"]) .btn.link { color: var(--accent); }
+.btn[disabled] { opacity: .55; cursor: default; }
+.actions { display: flex; gap: 10px; padding: 16px 18px; border-top: 1px solid var(--line); background: var(--panel-2); border-radius: 0 0 10px 10px; }
+.actions .primary { flex: 1; }
+
+details.adv { margin-top: 2px; }
+details.adv > summary { cursor: pointer; font-size: 13.5px; color: var(--muted); padding: 2px 0 8px; }
+details.adv[open] > summary { color: var(--ink); }
+
+/* ---------- сцена ---------- */
+.stage { min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
+.mapwrap {
+  position: relative; border-radius: 10px; overflow: hidden; border: 1px solid var(--line);
+  background: #0e0919; aspect-ratio: 16 / 10; min-height: 340px; max-height: 76vh;
+}
+@media (max-width: 620px) { .mapwrap { aspect-ratio: 1 / 1.05; } }
+#map { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; cursor: grab; }
+#map.drag { cursor: grabbing; }
+#map:focus-visible { outline-offset: -3px; }
+.mapctl { position: absolute; top: 10px; right: 10px; display: flex; gap: 6px; }
+.mapctl button {
+  background: rgba(20, 14, 36, .82); color: #ece7f8; border: 1px solid #3c2f5e; border-radius: 6px;
+  min-width: 34px; height: 34px; padding: 0 10px; cursor: pointer; font-weight: 500; font-size: 13.5px;
+}
+.mapctl button:hover { border-color: #8f7fc0; }
+.legend {
+  position: absolute; left: 10px; bottom: 10px; display: flex; flex-wrap: wrap; gap: 4px 14px; max-width: calc(100% - 20px);
+  background: rgba(14, 9, 25, .82); border: 1px solid #2e2348; color: #c9bfe3; border-radius: 6px; padding: 6px 10px; font-size: 12px;
+  pointer-events: none;
+}
+.legend i { display: inline-block; vertical-align: -2px; margin-right: 5px; }
+.lg-d { width: 9px; height: 9px; transform: rotate(45deg) scale(.85); background: #f4efb8; border: 1px solid #fff; }
+.lg-s { width: 7px; height: 7px; transform: rotate(45deg); background: #7d6fa8; }
+.lg-c { width: 8px; height: 8px; border-radius: 50%; border: 1px solid #7a6fa3; }
+.lg-r { width: 16px; height: 0; border-top: 2px dashed #e8de9e; opacity: .7; }
+.tip {
+  position: absolute; pointer-events: none; z-index: 3; display: none; max-width: 240px;
+  background: rgba(14, 9, 25, .95); color: #ece7f8; border: 1px solid #4a3b76; border-radius: 6px; padding: 7px 10px; font-size: 12.5px; line-height: 1.4;
+}
+.tip b { font-weight: 600; }
+.empty {
+  position: absolute; inset: 0; display: grid; place-items: center; text-align: center; padding: 20px; pointer-events: none;
+  color: #cfc6e8;
+}
+.empty div { max-width: 30ch; }
+.empty strong { display: block; font-family: "Pixelify Sans", "IBM Plex Sans", system-ui, sans-serif; font-size: 22px; font-weight: 700; margin-bottom: 4px; color: #ece7f8; }
+.empty span { font-size: 14px; color: #a99fc7; }
+
+/* статус и ход вычисления */
+.status { min-height: 22px; font-size: 14px; }
+.status .msg { display: block; }
+.status.err .msg { color: var(--danger); font-weight: 500; }
+.bar { height: 6px; border-radius: 3px; background: var(--panel-2); margin-top: 8px; overflow: hidden; display: none; }
+.bar > i { display: block; height: 100%; width: 0; background: var(--accent); }
+.status.busy .bar { display: block; }
+
+/* выбранная точка */
+.sel {
+  display: none; border: 1px solid var(--line); background: var(--panel); border-radius: 10px; padding: 12px 14px;
+  gap: 10px 22px; grid-template-columns: repeat(auto-fit, minmax(96px, max-content)); align-items: end;
+}
+.sel.on { display: grid; }
+.sel h3 { grid-column: 1 / -1; margin: 0; font-size: 15px; font-weight: 600; }
+.sel dl { margin: 0; }
+.sel dt { font-size: 12.5px; color: var(--muted); }
+.sel dd { margin: 0; font-weight: 600; font-size: 16px; }
+.sel .btns { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 8px; }
+
+/* результаты */
+.results { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; box-shadow: var(--shadow); }
+.results[hidden] { display: none; }
+.sum { padding: 14px 18px; border-bottom: 1px solid var(--line); }
+.sum p { margin: 0; }
+.sum p + p { margin-top: 4px; }
+.sum .sub { color: var(--muted); font-size: 13.5px; }
+.sum b { font-weight: 600; }
+.tblwrap { max-height: 430px; overflow: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th, td { padding: 7px 12px; text-align: right; white-space: nowrap; }
+th:first-child, td:first-child { text-align: left; padding-left: 18px; }
+th:last-child, td:last-child { padding-right: 18px; }
+th { position: sticky; top: 0; background: var(--panel-2); font-weight: 600; font-size: 13px; z-index: 1; }
+tbody tr { border-top: 1px solid var(--line); cursor: pointer; }
+tbody tr:hover, tbody tr.hov { background: var(--accent-soft); }
+tbody tr.on { background: var(--accent-soft); box-shadow: inset 3px 0 0 var(--accent); }
+td .sw { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 8px; vertical-align: -1px; border: 1px solid rgba(0,0,0,.25); }
+td.nos { color: var(--muted); text-align: left; }
+.more { padding: 10px 18px; border-top: 1px solid var(--line); }
+.export { border-top: 1px solid var(--line); padding: 14px 18px 18px; }
+.export h2 { margin: 0 0 10px; font-size: 15px; font-weight: 600; }
+.export .tabs { display: inline-grid; grid-auto-flow: column; gap: 3px; padding: 3px; border: 1px solid var(--line); border-radius: 8px; background: var(--field); margin-bottom: 10px; }
+.export .tabs button { border: 0; background: none; padding: 5px 12px; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 13.5px; }
+.export .tabs button[aria-pressed=true] { background: var(--accent); color: var(--accent-ink); }
+textarea {
+  width: 100%; height: 150px; resize: vertical; background: var(--field); border: 1px solid var(--line); border-radius: 6px; padding: 9px 10px;
+  font: 12.5px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; white-space: pre; overflow: auto;
+}
+.export .btns { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; align-items: center; }
+.export .hint { margin-top: 10px; }
+
+details.about { border: 1px solid var(--line); background: var(--panel); border-radius: 10px; padding: 12px 18px; }
+details.about summary { cursor: pointer; font-weight: 600; }
+details.about div { margin-top: 10px; color: var(--muted); font-size: 14px; max-width: 78ch; }
+details.about p { margin: 0 0 8px; }
+details.about b { color: var(--ink); font-weight: 600; }
+
+.toast {
+  position: fixed; left: 50%; bottom: calc(22px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%);
+  background: var(--ink); color: var(--bg); padding: 9px 16px; border-radius: 8px; font-size: 14px; font-weight: 500;
+  opacity: 0; pointer-events: none; z-index: 20; max-width: calc(100vw - 32px);
+}
+.toast.show { opacity: 1; }
+@media (prefers-reduced-motion: no-preference) { .toast { transition: opacity .18s; } }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+</style>
+</head>
+<body>
+<div class="page">
+  <header class="head">
+    <div>
+      <h1 data-i18n="title">End Ships</h1>
+      <p data-i18n="lead">Finds End cities with a ship (that's where the elytra is) from a world seed and plans a short route through several of them.</p>
+    </div>
+    <div class="lang" role="group" aria-label="Language / Язык">
+      <button type="button" data-lang="en" aria-pressed="true" lang="en">EN</button>
+      <button type="button" data-lang="ru" aria-pressed="false" lang="ru">RU</button>
+    </div>
+  </header>
+
+  <div class="layout">
+    <form id="form" class="controls" novalidate autocomplete="off">
+      <fieldset>
+        <legend data-i18n="world">World</legend>
+        <div class="f">
+          <label class="l" for="seed" data-i18n="seed">Seed</label>
+          <input id="seed" type="text" inputmode="text" spellcheck="false" placeholder="a number or text, as in the game" data-i18n-ph="seedPh" aria-describedby="seedHint">
+          <span class="hint" id="seedHint"></span>
+        </div>
+        <div class="f">
+          <label class="l" for="version" data-i18n="version">Minecraft version (Java)</label>
+          <select id="version"></select>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend data-i18n="where">Where to search</legend>
+        <div class="row2 f">
+          <div><label class="l" for="cx" data-i18n="yourX">Your X</label><input id="cx" type="number" step="1" value="0"></div>
+          <div><label class="l" for="cz" data-i18n="yourZ">Your Z</label><input id="cz" type="number" step="1" value="0"></div>
+        </div>
+        <div class="f">
+          <label class="l" for="radius" data-i18n="radius">Search radius, blocks</label>
+          <input id="radius" type="number" min="500" max="150000" step="100" value="10000" aria-describedby="radiusHint">
+          <span class="chips" id="radiusChips">
+            <button type="button" class="btn" data-r="3000">3,000</button>
+            <button type="button" class="btn" data-r="6000">6,000</button>
+            <button type="button" class="btn" data-r="10000">10,000</button>
+            <button type="button" class="btn" data-r="20000">20,000</button>
+          </span>
+          <span class="hint" id="radiusHint"></span>
+        </div>
+        <label class="check"><input id="all" type="checkbox"><span><span data-i18n="allLbl">Include cities without a ship</span><small data-i18n="allHint">They also go into the list and the route.</small></span></label>
+      </fieldset>
+
+      <fieldset>
+        <legend data-i18n="what">What to get</legend>
+        <div class="seg f" role="radiogroup" aria-label="Mode" data-i18n-aria="modeAria">
+          <label><input type="radio" name="mode" value="route" checked><span data-i18n="modeRoute">Route</span></label>
+          <label><input type="radio" name="mode" value="list"><span data-i18n="modeList">List</span></label>
+        </div>
+        <div class="f">
+          <label class="l" for="stops" id="stopsLabel">How many ships to visit</label>
+          <div class="inline">
+            <input id="stops" type="number" min="1" max="5000" step="1" value="15">
+            <label class="check" style="margin:0"><input id="stopsAll" type="checkbox"><span data-i18n="stopsAll">all</span></label>
+          </div>
+        </div>
+        <div id="routeOpts">
+          <label class="check"><input id="loop" type="checkbox"><span><span data-i18n="loopLbl">Return to the start</span><small data-i18n="loopHint">The route will close back at your point.</small></span></label>
+          <div class="f">
+            <label class="l" for="maxleg" data-i18n="maxlegLbl">Don't detour further than, blocks</label>
+            <input id="maxleg" type="number" min="0" step="100" value="0" aria-describedby="maxlegHint">
+            <span class="hint" id="maxlegHint" data-i18n="maxlegHint">A detour for a single ship won't be longer than this. 0 means no limit.</span>
+          </div>
+          <div class="f">
+            <label class="l" for="effort" data-i18n="effortLbl">How hard to work on the route</label>
+            <select id="effort" aria-describedby="effortHint">
+              <option value="10" data-i18n="effort10">Quick (10 attempts)</option>
+              <option value="100" selected data-i18n="effort100">Normal (100 attempts)</option>
+              <option value="500" data-i18n="effort500">Thorough (500 attempts)</option>
+              <option value="3000" data-i18n="effort3000">Maximum (3000 attempts)</option>
+            </select>
+            <span class="hint" id="effortHint" data-i18n="effortHint">Each attempt starts over and looks for a better route. More attempts take longer and usually give a slightly shorter path.</span>
+          </div>
+          <details class="adv">
+            <summary data-i18n="adv">Advanced</summary>
+            <label class="check"><input id="useStart" type="checkbox"><span data-i18n="useStartLbl">Start the route somewhere other than the search point</span></label>
+            <div class="row2 f">
+              <div><label class="l" for="sx" data-i18n="startX">Start X</label><input id="sx" type="number" step="1" value="0" disabled></div>
+              <div><label class="l" for="sz" data-i18n="startZ">Start Z</label><input id="sz" type="number" step="1" value="0" disabled></div>
+            </div>
+            <div class="f">
+              <label class="l" for="rngseed" data-i18n="rngLbl">Repeatability number</label>
+              <input id="rngseed" type="number" step="1" placeholder="empty for the default" data-i18n-ph="rngPh" aria-describedby="rngHint">
+              <span class="hint" id="rngHint" data-i18n="rngHint">With the same number, the attempts give the same route.</span>
+            </div>
+          </details>
+        </div>
+      </fieldset>
+
+      <div class="actions">
+        <button type="submit" class="btn primary" id="go" data-i18n="go">Find</button>
+        <button type="button" class="btn" id="stopBtn" data-i18n="stop" hidden>Stop</button>
+      </div>
+    </form>
+
+    <section class="stage" aria-label="Result" data-i18n-aria="stageAria" id="stage">
+      <div class="mapwrap" id="mapwrap">
+        <canvas id="map" tabindex="0" role="img" aria-label="End map: cities with ships and the route. Arrow keys pan the map, plus and minus zoom." data-i18n-aria="mapAria"></canvas>
+        <div class="empty" id="empty"><div><strong data-i18n="emptyT">Nothing yet</strong><span data-i18n="emptyD">Enter a seed and press Find. Ships and the path between them will appear here.</span></div></div>
+        <div class="mapctl" id="mapctl">
+          <button type="button" id="zin" aria-label="Zoom in" data-i18n-aria="zin">+</button>
+          <button type="button" id="zout" aria-label="Zoom out" data-i18n-aria="zout">−</button>
+          <button type="button" id="zfit" data-i18n="zfit">Fit</button>
+          <button type="button" id="zrad" data-i18n="zrad">Whole radius</button>
+        </div>
+        <div class="legend" id="legend" aria-hidden="true">
+          <span><i class="lg-d"></i><span data-i18n="lgShown">in the list or route</span></span>
+          <span><i class="lg-s"></i><span data-i18n="lgOthers">other ships</span></span>
+          <span id="lgC" hidden><i class="lg-c"></i><span data-i18n="lgCity">city without a ship</span></span>
+          <span><i class="lg-r"></i><span data-i18n="lgRadius">search radius</span></span>
+        </div>
+        <div class="tip" id="tip"></div>
+      </div>
+
+      <div class="status" id="status"><span class="msg" id="msg"></span><div class="bar"><i id="barfill"></i></div></div>
+      <div class="sr" id="live" role="status" aria-live="polite"></div>
+
+      <div class="sel" id="sel"></div>
+
+      <div class="results" id="results" hidden>
+        <div class="sum" id="sum"></div>
+        <div class="tblwrap"><table id="tbl"><thead></thead><tbody></tbody></table></div>
+        <div class="more" id="more" hidden><button type="button" class="btn" id="moreBtn"></button></div>
+        <div class="export">
+          <h2 data-i18n="exportH">Waypoints for your minimap</h2>
+          <div class="tabs" role="group" aria-label="Format" data-i18n-aria="fmtAria"><button type="button" id="fx" aria-pressed="true">Xaero</button><button type="button" id="fc" aria-pressed="false">CSV</button></div>
+          <textarea id="out" readonly spellcheck="false" aria-label="Text to export" data-i18n-aria="outAria"></textarea>
+          <div class="btns">
+            <button type="button" class="btn primary" id="copyOut" style="padding:8px 14px;font-size:14px" data-i18n="copyAll">Copy all</button>
+            <button type="button" class="btn" id="saveOut" data-i18n="saveFile">Save file</button>
+          </div>
+          <span class="hint" id="outHint" data-i18n="expHint">Paste the waypoint: lines into your Xaero waypoints file for the End (the XaeroWaypoints folder, then the dim%1 subfolder inside your world), or import them any other way. The color from green to purple shows the order.</span>
+        </div>
+      </div>
+
+      <details class="about">
+        <summary data-i18n="about">How it works</summary>
+        <div>
+          <p data-i18n-html="aboutSearch"><b>Search.</b> Uses the same world generation rules as the game: the 20×20-chunk region grid, a biome check on the outer islands, a terrain check (height of at least 60 under all four corners of the city) and assembly of the towers and bridges to see whether the city has a ship. The algorithm is ported from cubiomes; the output was compared with a C program on several seeds and versions, and every coordinate matched.</p>
+          <p data-i18n-html="aboutRoute"><b>Route.</b> Greedy insertion, then reordering (2-opt, Or-opt), swapping ships for better-placed ones, and random restarts. Distances are straight lines in the X/Z plane; height is ignored.</p>
+          <p data-i18n-html="aboutLimits"><b>Limits.</b> Java Edition only, 1.13 and newer. Bedrock generates the world differently, so its seeds don't match. Y in the table is the level of the ship's hull bottom.</p>
+        </div>
+      </details>
+    </section>
+  </div>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+/* ==========================================================================
+   Движок: энд-города с кораблями (элитры) + планировщик маршрута.
+   Перенос на JS логики cubiomes (Cubitect) и endship.c.
+   Никаких зависимостей. Работает и в браузере, и в Node (для тестов).
+   ========================================================================== */
+const EndShip = (() => {
+'use strict';
+
+/* ---------- Java Random (48-битный LCG) на обычных числах ---------------- */
+
+const T24 = 16777216;          // 2^24
+const ML = 0xECE66D;           // младшие 24 бита множителя 0x5DEECE66D
+const MH = 0x5DE;              // старшие биты множителя
+const POW2 = []; for (let i = 0; i <= 48; i++) POW2.push(Math.pow(2, i));
+
+class JRandom {
+    constructor() { this.hi = 0; this.lo = 0; }
+    setSeed(seed) {                       // seed: BigInt (любой знак)
+        const s = BigInt.asUintN(48, seed) ^ 0x5DEECE66Dn;
+        this.hi = Number(s >> 24n);
+        this.lo = Number(s & 0xFFFFFFn);
+        return this;
+    }
+    step() {
+        const ol = this.lo, oh = this.hi;
+        const l = ol * ML + 0xB;
+        const c = Math.floor(l / T24);
+        this.lo = l - c * T24;
+        const h = oh * ML + ol * MH + c;
+        this.hi = h - Math.floor(h / T24) * T24;
+    }
+    next(bits) {
+        this.step();
+        return Math.floor((this.hi * T24 + this.lo) / POW2[48 - bits]) | 0;
+    }
+    nextInt(n) {
+        if ((n & (n - 1)) === 0)
+            return Math.floor(n * this.next(31) / 2147483648);
+        let bits, val;
+        do {
+            bits = this.next(31);
+            val = bits % n;
+        } while (((bits - val + (n - 1)) | 0) < 0);
+        return val;
+    }
+    nextDouble() {
+        return (this.next(26) * 134217728 + this.next(27)) / 9007199254740992;
+    }
+    nextLongBig() {
+        const a = BigInt(this.next(32));
+        const b = BigInt(this.next(32));
+        return BigInt.asUintN(64, (a << 32n) + b);
+    }
+    skip(n) { for (let i = 0; i < n; i++) this.step(); }
+}
+
+/* ---------- Perlin / Simplex --------------------------------------------- */
+
+function grad(idx, a, b, c) {
+    switch (idx & 15) {
+    case 0:  return  a + b;
+    case 1:  return -a + b;
+    case 2:  return  a - b;
+    case 3:  return -a - b;
+    case 4:  return  a + c;
+    case 5:  return -a + c;
+    case 6:  return  a - c;
+    case 7:  return -a - c;
+    case 8:  return  b + c;
+    case 9:  return -b + c;
+    case 10: return  b - c;
+    case 11: return -b - c;
+    case 12: return  a + b;
+    case 13: return -b + c;
+    case 14: return -a + b;
+    default: return -b - c;
+    }
+}
+
+function perlinInit(rng) {
+    const p = {
+        a: rng.nextDouble() * 256.0,
+        b: rng.nextDouble() * 256.0,
+        c: rng.nextDouble() * 256.0,
+        d: new Uint8Array(257), h2: 0, d2: 0, t2: 0,
+    };
+    const d = p.d;
+    for (let i = 0; i < 256; i++) d[i] = i;
+    for (let i = 0; i < 256; i++) {
+        const j = rng.nextInt(256 - i) + i;
+        const n = d[i]; d[i] = d[j]; d[j] = n;
+    }
+    d[256] = d[0];
+    const i2 = Math.floor(p.b);
+    const d2 = p.b - i2;
+    p.h2 = i2 & 255;
+    p.d2 = d2;
+    p.t2 = d2 * d2 * d2 * (d2 * (d2 * 6.0 - 15.0) + 10.0);
+    return p;
+}
+
+function samplePerlin(n, d1, d2, d3, yamp, ymin) {
+    let h2, t2;
+    if (d2 === 0.0) {
+        d2 = n.d2; h2 = n.h2; t2 = n.t2;
+    } else {
+        d2 += n.b;
+        const i2 = Math.floor(d2);
+        d2 -= i2;
+        h2 = i2 & 255;
+        t2 = d2 * d2 * d2 * (d2 * (d2 * 6.0 - 15.0) + 10.0);
+    }
+    d1 += n.a;
+    d3 += n.c;
+    const i1 = Math.floor(d1);
+    const i3 = Math.floor(d3);
+    d1 -= i1;
+    d3 -= i3;
+    const h1 = i1 & 255, h3 = i3 & 255;
+    const t1 = d1 * d1 * d1 * (d1 * (d1 * 6.0 - 15.0) + 10.0);
+    const t3 = d3 * d3 * d3 * (d3 * (d3 * 6.0 - 15.0) + 10.0);
+
+    if (yamp) {
+        const yclamp = ymin < d2 ? ymin : d2;
+        d2 -= Math.floor(yclamp / yamp) * yamp;
+    }
+
+    const idx = n.d;
+    const a1 = (idx[h1] + h2) & 255;
+    const b1 = (idx[h1 + 1] + h2) & 255;
+    const a2 = (idx[a1] + h3) & 255;
+    const b2 = (idx[b1] + h3) & 255;
+    const a3 = (idx[a1 + 1] + h3) & 255;
+    const b3 = (idx[b1 + 1] + h3) & 255;
+
+    let l1 = grad(idx[a2],     d1,     d2,     d3);
+    let l5 = grad(idx[a2 + 1], d1,     d2,     d3 - 1);
+    let l2 = grad(idx[b2],     d1 - 1, d2,     d3);
+    let l6 = grad(idx[b2 + 1], d1 - 1, d2,     d3 - 1);
+    let l3 = grad(idx[a3],     d1,     d2 - 1, d3);
+    let l7 = grad(idx[a3 + 1], d1,     d2 - 1, d3 - 1);
+    let l4 = grad(idx[b3],     d1 - 1, d2 - 1, d3);
+    let l8 = grad(idx[b3 + 1], d1 - 1, d2 - 1, d3 - 1);
+
+    l1 = l1 + t1 * (l2 - l1);
+    l3 = l3 + t1 * (l4 - l3);
+    l5 = l5 + t1 * (l6 - l5);
+    l7 = l7 + t1 * (l8 - l7);
+
+    l1 = l1 + t2 * (l3 - l1);
+    l5 = l5 + t2 * (l7 - l5);
+
+    return l1 + t3 * (l5 - l1);
+}
+
+const SKEW = 0.5 * (Math.sqrt(3) - 1.0);
+const UNSKEW = (3.0 - Math.sqrt(3)) / 6.0;
+
+function simplexGrad(idx, x, y, z, d) {
+    let con = d - x * x - y * y - z * z;
+    if (con < 0) return 0;
+    con *= con;
+    return con * con * grad(idx, x, y, z);
+}
+
+function sampleSimplex2D(d, x, y) {
+    const hf = (x + y) * SKEW;
+    const hx = Math.floor(x + hf);
+    const hz = Math.floor(y + hf);
+    const mhxz = (hx + hz) * UNSKEW;
+    const x0 = x - (hx - mhxz);
+    const y0 = y - (hz - mhxz);
+    const offx = x0 > y0 ? 1 : 0;
+    const offz = 1 - offx;
+    const x1 = x0 - offx + UNSKEW;
+    const y1 = y0 - offz + UNSKEW;
+    const x2 = x0 - 1.0 + 2.0 * UNSKEW;
+    const y2 = y0 - 1.0 + 2.0 * UNSKEW;
+    let gi0 = d[0xff & hz];
+    let gi1 = d[0xff & (hz + offz)];
+    let gi2 = d[0xff & (hz + 1)];
+    gi0 = d[0xff & (gi0 + hx)];
+    gi1 = d[0xff & (gi1 + hx + offx)];
+    gi2 = d[0xff & (gi2 + hx + 1)];
+    let t = 0;
+    t += simplexGrad(gi0 % 12, x0, y0, 0.0, 0.5);
+    t += simplexGrad(gi1 % 12, x1, y1, 0.0, 0.5);
+    t += simplexGrad(gi2 % 12, x2, y2, 0.0, 0.5);
+    return 70.0 * t;
+}
+
+/* ---------- Мир Энда: шум островов + шум поверхности --------------------- */
+
+// Версии. newRng: с 1.19 поворот для проверки рельефа берётся из другого ГСЧ.
+// rings: с 1.14 включён «внешний край» (переполнение int в расстоянии).
+const VERSIONS = [
+    { id: '1.21', label: '1.21+',         newRng: true,  rings: true  },
+    { id: '1.20', label: '1.20',         newRng: true,  rings: true  },
+    { id: '1.19', label: '1.19',         newRng: true,  rings: true  },
+    { id: '1.18', label: '1.18',         newRng: false, rings: true  },
+    { id: '1.17', label: '1.17',         newRng: false, rings: true  },
+    { id: '1.16', label: '1.16',         newRng: false, rings: true  },
+    { id: '1.15', label: '1.15',         newRng: false, rings: true  },
+    { id: '1.14', label: '1.14',         newRng: false, rings: true  },
+    { id: '1.13', label: '1.13',         newRng: false, rings: false },
+];
+
+function makeWorld(seed, version) {
+    const ver = VERSIONS.find(v => v.id === version) || VERSIONS[0];
+    // простой шум для островов (simplex) — 17292 вызовов после сида
+    const r1 = new JRandom().setSeed(seed);
+    r1.skip(17292);
+    const island = perlinInit(r1);
+
+    // шум поверхности: 16 + 16 + 8 октав подряд из одного ГСЧ
+    const r2 = new JRandom().setSeed(seed);
+    const octmin = [], octmax = [], octmain = [];
+    for (let i = 0; i < 16; i++) octmin.push(perlinInit(r2));
+    for (let i = 0; i < 16; i++) octmax.push(perlinInit(r2));
+    for (let i = 0; i < 8; i++)  octmain.push(perlinInit(r2));
+
+    return {
+        seed, ver, perm: island.d, octmin, octmax, octmain,
+        // локальное окно кэша «есть ли остров в точке (rx,rz)»
+        win: new Int8Array(32 * 32), winX: 0, winZ: 0,
+    };
+}
+
+const NEG09F = Math.fround(-0.9);
+const WIN = 32;
+
+function islandVCompute(w, rx, rz) {
+    if (rx * rx + rz * rz > 4096 && sampleSimplex2D(w.perm, rx, rz) < NEG09F) {
+        const f1 = Math.fround(Math.fround(Math.abs(rx)) * 3439);
+        const f2 = Math.fround(Math.fround(Math.abs(rz)) * 147);
+        const s = Math.fround(f1 + f2);
+        return (Math.trunc(s) % 13) + 9;
+    }
+    return 0;
+}
+
+function islandV(w, rx, rz) {
+    const ix = rx - w.winX, iz = rz - w.winZ;
+    if (ix >= 0 && ix < WIN && iz >= 0 && iz < WIN) {
+        const k = iz * WIN + ix;
+        let v = w.win[k];
+        if (v < 0) { v = islandVCompute(w, rx, rz); w.win[k] = v; }
+        return v;
+    }
+    return islandVCompute(w, rx, rz);
+}
+
+function setWindow(w, chunkX, chunkZ) {
+    w.winX = chunkX - 14;
+    w.winZ = chunkZ - 14;
+    w.win.fill(-1);
+}
+
+// Минимум (расстояние² · v²) по островам вокруг точки. x,z — «половинки чанка».
+function endIslandH(w, x, z, range) {
+    const hx = Math.trunc(x / 2), hz = Math.trunc(z / 2);
+    const oddx = x % 2, oddz = z % 2;
+    let h = 64 * (x * x + z * z);
+    for (let j = -range; j <= range; j++) {
+        for (let i = -range; i <= range; i++) {
+            const v = islandV(w, hx + i, hz + j);
+            if (v) {
+                const rx = oddx - i * 2, rz = oddz - j * 2;
+                const noise = (rx * rx + rz * rz) * v * v;
+                if (noise < h) h = noise;
+            }
+        }
+    }
+    return h;
+}
+
+// Высота «шума островов» в ячейке шума (x,z в клетках по 8 блоков)
+function getEndHeightNoise(w, x, z) {
+    const h = endIslandH(w, x, z, 12);
+    let ret = Math.fround(100 - Math.fround(Math.sqrt(Math.fround(h))));
+    if (ret < -100) ret = -100;
+    if (ret > 80) ret = 80;
+    return ret;
+}
+
+// Биом Энда на чанке: 0 — главный остров/нет, 1 — highlands, 2 — midlands,
+// 3 — barrens, 4 — small islands.
+const BIOME_THE_END = 0, BIOME_HIGHLANDS = 1, BIOME_MIDLANDS = 2,
+      BIOME_BARRENS = 3, BIOME_SMALL = 4;
+
+function endBiomeAtChunk(w, cx, cz) {
+    if (cx * cx + cz * cz <= 4096) return BIOME_THE_END;
+    const hx = 2 * cx + 1, hz = 2 * cz + 1;
+    if (w.ver.rings) {
+        const rsq = hx * hx + hz * hz;
+        if ((rsq % 4294967296) >= 2147483648) return BIOME_BARRENS;
+    }
+    setWindow(w, cx, cz);
+    const h = Math.min(14401, endIslandH(w, hx, hz, 12));
+    if (h < 3600) return BIOME_HIGHLANDS;
+    if (h <= 10000) return BIOME_MIDLANDS;
+    if (h <= 14400) return BIOME_BARRENS;
+    return BIOME_SMALL;
+}
+
+// Быстрая проверка «highlands или midlands»: для порога h <= 10000 острова
+// дальше 6 клеток не влияют (расстояние·v >= 13·9 = 117 > 100). Возвращает
+// биом (1 или 2) либо 0, если город здесь невозможен.
+function endCityBiome(w, cx, cz) {
+    if (cx * cx + cz * cz <= 4096) return 0;
+    const hx = 2 * cx + 1, hz = 2 * cz + 1;
+    if (w.ver.rings) {
+        const rsq = hx * hx + hz * hz;
+        if ((rsq % 4294967296) >= 2147483648) return 0;
+    }
+    setWindow(w, cx, cz);
+    const h = endIslandH(w, hx, hz, 6);
+    if (h < 3600) return BIOME_HIGHLANDS;
+    if (h <= 10000) return BIOME_MIDLANDS;
+    return 0;
+}
+
+/* Шум поверхности, ограниченный [noiseMin, noiseMax] (быстрый вариант cubiomes) */
+function sampleSurfaceNoiseBetween(w, x, y, z, noiseMin, noiseMax) {
+    const xzScale = 684.412 * 2.0;
+    const yScale = 684.412 * 1.0;
+    let vmin = 0, vmax = 0;
+    let persist = 1.0 / 32768.0;
+    let amp = 64.0;
+
+    for (let i = 15; i >= 0; i--) {
+        const dx = x * xzScale * persist;
+        const dz = z * xzScale * persist;
+        const sy = yScale * persist;
+        const dy = y * sy;
+        vmin += samplePerlin(w.octmin[i], dx, dy, dz, sy, dy) * amp;
+        vmax += samplePerlin(w.octmax[i], dx, dy, dz, sy, dy) * amp;
+        if (vmin - amp > noiseMax && vmax - amp > noiseMax) return noiseMax;
+        if (vmin + amp < noiseMin && vmax + amp < noiseMin) return noiseMin;
+        amp *= 0.5;
+        persist *= 2.0;
+    }
+
+    const xzStep = xzScale / 80;
+    const yStep = yScale / 160;
+    let vmain = 0.5;
+    persist = 1.0 / 128.0;
+    amp = 0.05 * 128.0;
+
+    for (let i = 7; i >= 0; i--) {
+        const dx = x * xzStep * persist;
+        const dz = z * xzStep * persist;
+        const sy = yStep * persist;
+        const dy = y * sy;
+        vmain += samplePerlin(w.octmain[i], dx, dy, dz, sy, dy) * amp;
+        if (vmain - amp > 1) return vmax;
+        if (vmain + amp < 0) return vmin;
+        amp *= 0.5;
+        persist *= 2.0;
+    }
+    if (vmain <= 0) return vmin;
+    if (vmain >= 1) return vmax;
+    return vmin + vmain * (vmax - vmin);
+}
+
+const UPPER_DROP = (() => {
+    const a = [];
+    for (let y = 0; y <= 32; y++) {
+        const t = (32 + 46 - y) / 64;
+        a.push(t > 1 ? 1.0 : t);
+    }
+    return a;
+})();
+const LOWER_DROP = (() => {
+    const a = [];
+    for (let y = 0; y <= 32; y++) {
+        const t = (y - 1) / 7;
+        a.push(t < 0 ? 0.0 : (t > 1 ? 1.0 : t));
+    }
+    return a;
+})();
+
+// Колонка плотности в клетке шума (x,z), уровни y0..y1 (в клетках по 4 блока)
+function sampleNoiseColumnEnd(w, x, z, y0, y1) {
+    const col = new Float64Array(y1 - y0 + 1);
+    if (w.ver.rings) {
+        const rsq = x * x + z * z;
+        if ((rsq % 4294967296) >= 2147483648) { col.fill(NaN); return col; }
+    }
+    const depth = Math.fround(getEndHeightNoise(w, x, z) - 8.0);
+    for (let y = y0; y <= y1; y++) {
+        if (LOWER_DROP[y] === 0.0) { col[y - y0] = -30; continue; }
+        const noise = sampleSurfaceNoiseBetween(w, x, y, z, -128, +128);
+        let clamped = noise + depth;
+        clamped = -3000 + UPPER_DROP[y] * (clamped - -3000);
+        clamped = -30 + LOWER_DROP[y] * (clamped - -30);
+        col[y - y0] = clamped;
+    }
+    return col;
+}
+
+function lerp(t, a, b) { return a + t * (b - a); }
+function lerp2(dx, dy, v00, v10, v01, v11) {
+    return lerp(dy, lerp(dx, v00, v10), lerp(dx, v01, v11));
+}
+function lerp3(dx, dy, dz, v000, v100, v010, v110, v001, v101, v011, v111) {
+    const a = lerp2(dx, dy, v000, v100, v010, v110);
+    const b = lerp2(dx, dy, v001, v101, v011, v111);
+    return lerp(dz, a, b);
+}
+
+// Первая (сверху) точка, где интерполированная плотность > 0
+function getSurfaceHeight(c00, c01, c10, c11, ymin, ymax, bpc, dx, dz) {
+    for (let celly = ymax - 1; celly >= ymin; celly--) {
+        const i = celly - ymin;
+        const v000 = c00[i], v001 = c01[i], v100 = c10[i], v101 = c11[i];
+        const v010 = c00[i + 1], v011 = c01[i + 1], v110 = c10[i + 1], v111 = c11[i + 1];
+        for (let y = bpc - 1; y >= 0; y--) {
+            const dy = y / bpc;
+            const noise = lerp3(dy, dx, dz, v000, v010, v100, v110, v001, v011, v101, v111);
+            if (noise > 0) return celly * bpc + y;
+        }
+    }
+    return 0;
+}
+
+/* Рельеф под городом. Возвращает базовую высоту (>=60) или 0, если не подходит. */
+function isViableEndCityTerrain(w, blockX, blockZ, keepWindow) {
+    const chunkX = blockX >> 4, chunkZ = blockZ >> 4;
+    const bx = chunkX * 16 + 7, bz = chunkZ * 16 + 7;
+    const cellx = bx >> 3, cellz = bz >> 3;
+    const y0 = 15, y1 = 18;
+
+    // поворот города
+    let rot;
+    if (!w.ver.newRng) {
+        const s = BigInt(chunkX) + BigInt(chunkZ) * 10387313n;
+        rot = new JRandom().setSeed(s).nextInt(4);
+    } else {
+        rot = chunkGenerateRnd(w.seed, chunkX, chunkZ).nextInt(4);
+    }
+    let sx = 5, sz = 5;
+    if (rot === 1) sx = -5;
+    else if (rot === 2) { sx = -5; sz = -5; }
+    else if (rot === 3) sz = -5;
+
+    if (!keepWindow) setWindow(w, chunkX, chunkZ);
+    const cols = new Map();
+    const col = (i, j) => {
+        const key = i * 4 + j;
+        let c = cols.get(key);
+        if (!c) { c = sampleNoiseColumnEnd(w, cellx + i, cellz + j, y0, y1); cols.set(key, c); }
+        return c;
+    };
+    const heightAt = (px, pz) => {
+        const ci = (px >> 3) - cellx, cj = (pz >> 3) - cellz;
+        return getSurfaceHeight(col(ci, cj), col(ci, cj + 1), col(ci + 1, cj), col(ci + 1, cj + 1),
+                                y0, y1, 4, (px & 7) / 8.0, (pz & 7) / 8.0);
+    };
+    // нужен минимум из четырёх высот >= 60: как только одна не подходит — выходим
+    let h = heightAt(bx, bz);
+    if (h < 60) return 0;
+    const h01 = heightAt(bx, bz + sz);
+    if (h01 < 60) return 0;
+    const h10 = heightAt(bx + sx, bz);
+    if (h10 < 60) return 0;
+    const h11 = heightAt(bx + sx, bz + sz);
+    if (h11 < 60) return 0;
+    return Math.min(h, h01, h10, h11);
+}
+
+/* ---------- Позиция структуры ------------------------------------------- */
+
+const K48 = 0x5DEECE66Dn, M48 = (1n << 48n) - 1n;
+
+function chunkGenerateRnd(seed, chunkX, chunkZ) {
+    const r = new JRandom().setSeed(seed);
+    const a = r.nextLongBig();
+    const b = r.nextLongBig();
+    const v = BigInt.asUintN(64, a * BigInt(chunkX)) ^
+              BigInt.asUintN(64, b * BigInt(chunkZ)) ^ BigInt.asUintN(64, seed);
+    return new JRandom().setSeed(v);
+}
+
+// End City: salt 10387313, регион 20 чанков, разброс 9 (треугольное распределение)
+function getEndCityPos(seed, regX, regZ) {
+    let s = BigInt.asUintN(48, seed + BigInt(regX) * 341873128712n +
+                               BigInt(regZ) * 132897987541n + 10387313n) ^ K48;
+    s = (s * K48 + 0xBn) & M48; let px = Number(s >> 17n) % 9;
+    s = (s * K48 + 0xBn) & M48; px += Number(s >> 17n) % 9;
+    s = (s * K48 + 0xBn) & M48; let pz = Number(s >> 17n) % 9;
+    s = (s * K48 + 0xBn) & M48; pz += Number(s >> 17n) % 9;
+    px >>= 1; pz >>= 1;
+    return { x: (regX * 20 + px) * 16, z: (regZ * 20 + pz) * 16 };
+}
+
+/* ---------- Сборка города из башен и мостов (jigsaw) --------------------- */
+
+const PT = {
+    BASE_FLOOR: 0, BASE_ROOF: 1, BRIDGE_END: 2, BRIDGE_GENTLE_STAIRS: 3,
+    BRIDGE_PIECE: 4, BRIDGE_STEEP_STAIRS: 5, FAT_TOWER_BASE: 6,
+    FAT_TOWER_MIDDLE: 7, FAT_TOWER_TOP: 8, SECOND_FLOOR_1: 9, SECOND_FLOOR_2: 10,
+    SECOND_ROOF: 11, END_SHIP: 12, THIRD_FLOOR_1: 13, THIRD_FLOOR_2: 14,
+    THIRD_ROOF: 15, TOWER_BASE: 16, TOWER_FLOOR: 17, TOWER_PIECE: 18, TOWER_TOP: 19,
+};
+const PSIZE = [
+    [9, 3, 9], [11, 1, 11], [4, 5, 1], [4, 6, 7], [4, 5, 3], [4, 6, 3],
+    [12, 3, 12], [12, 7, 12], [16, 5, 16], [11, 7, 11], [11, 7, 11], [13, 1, 13],
+    [12, 23, 28], [13, 7, 13], [13, 7, 13], [15, 1, 15], [6, 6, 6], [6, 3, 6],
+    [6, 3, 6], [8, 4, 8],
+];
+
+function addPiece(env, prev, rot, px, py, pz, typ) {
+    const sz = PSIZE[typ];
+    const p = {
+        type: typ, rot, depth: 0,
+        x: px, y: py, z: pz,
+        x0: px, y0: py, z0: pz, x1: px, y1: py + sz[1], z1: pz,
+    };
+    if (prev) { p.x = prev.x; p.y = prev.y; p.z = prev.z;
+                p.x0 = p.x1 = p.x; p.y0 = p.y; p.y1 = p.y + sz[1]; p.z0 = p.z1 = p.z; }
+    switch (rot) {
+    case 0: p.x1 += sz[0]; p.z1 += sz[2]; break;
+    case 1: p.x0 -= sz[2]; p.z1 += sz[0]; break;
+    case 2: p.x0 -= sz[0]; p.z0 -= sz[2]; break;
+    case 3: p.x1 += sz[2]; p.z0 -= sz[0]; break;
+    }
+    if (prev) {
+        let dx = 0, dy = py, dz = 0;
+        switch (prev.rot) {
+        case 0: dx += px; dz += pz; break;
+        case 1: dx -= pz; dz += px; break;
+        case 2: dx -= px; dz -= pz; break;
+        case 3: dx += pz; dz -= px; break;
+        }
+        p.x += dx; p.y += dy; p.z += dz;
+        p.x0 += dx; p.y0 += dy; p.z0 += dz;
+        p.x1 += dx; p.y1 += dy; p.z1 += dz;
+    }
+    env.list.push(p);
+    return p;
+}
+
+function genPiecesRecursively(gen, env, current, depth) {
+    if (depth > 8) return false;
+    const local = { list: [], rng: env.rng, ship: env.ship, y: env.y };
+    if (!gen(local, current, depth)) return false;
+    const gendepth = (env.rng.next(32) << 24) >> 24;       // int8_t
+    for (let i = 0; i < local.list.length; i++) {
+        const p = local.list[i];
+        p.depth = gendepth;
+        for (let j = 0; j < env.list.length; j++) {
+            const q = env.list[j];
+            if (q.x1 >= p.x0 && q.x0 <= p.x1 && q.z1 >= p.z0 && q.z0 <= p.z1 &&
+                q.y1 >= p.y0 && q.y0 <= p.y1) {
+                if (current.depth !== q.depth) return false;
+                break;
+            }
+        }
+    }
+    for (let i = 0; i < local.list.length; i++) env.list.push(local.list[i]);
+    return true;
+}
+
+function genTower(env, current, depth) {
+    const rng = env.rng, rot = current.rot;
+    const x = 3 + rng.nextInt(2);
+    const z = 3 + rng.nextInt(2);
+    let base = current;
+    base = addPiece(env, base, rot, x, -3, z, PT.TOWER_BASE);
+    base = addPiece(env, base, rot, 0, 7, 0, PT.TOWER_PIECE);
+    let floor = (rng.nextInt(3) === 0) ? base : null;
+    const floorcnt = 1 + rng.nextInt(3);
+    for (let i = 0; i < floorcnt; i++) {
+        base = addPiece(env, base, rot, 0, 4, 0, PT.TOWER_PIECE);
+        if (i < floorcnt - 1 && rng.next(1)) floor = base;
+    }
+    if (floor) {
+        const binfo = [[0, 1, -1, 0], [1, 6, -1, 1], [3, 0, -1, 5], [2, 5, -1, 6]];
+        for (let i = 0; i < 4; i++) {
+            if (!rng.next(1)) continue;
+            const brot = (rot + binfo[i][0]) & 3;
+            const bridge = addPiece(env, base, brot, binfo[i][1], binfo[i][2], binfo[i][3], PT.BRIDGE_END);
+            genPiecesRecursively(genBridge, env, bridge, depth + 1);
+        }
+    } else if (depth !== 7) {
+        return genPiecesRecursively(genFatTower, env, base, depth + 1);
+    }
+    addPiece(env, base, rot, -1, 4, -1, PT.TOWER_TOP);
+    return true;
+}
+
+function genBridge(env, current, depth) {
+    const rng = env.rng, rot = current.rot;
+    const floorcnt = 1 + rng.nextInt(4);
+    let base = current;
+    base = addPiece(env, base, rot, 0, 0, -4, PT.BRIDGE_PIECE);
+    base.depth = -1;
+    let y = 0;
+    for (let i = 0; i < floorcnt; i++) {
+        if (rng.next(1)) {
+            base = addPiece(env, base, rot, 0, y, -4, PT.BRIDGE_PIECE);
+            y = 0;
+            continue;
+        }
+        if (rng.next(1))
+            base = addPiece(env, base, rot, 0, y, -4, PT.BRIDGE_STEEP_STAIRS);
+        else
+            base = addPiece(env, base, rot, 0, y, -8, PT.BRIDGE_GENTLE_STAIRS);
+        y = 4;
+    }
+    if (!env.ship.v && rng.nextInt(10 - depth) === 0) {
+        const x = -8 + rng.nextInt(8);
+        const z = -70 + rng.nextInt(10);
+        base = addPiece(env, base, rot, x, y, z, PT.END_SHIP);
+        env.ship.v = 1;
+    } else {
+        env.y = y + 1;
+        if (!genPiecesRecursively(genHouseTower, env, base, depth + 1))
+            return false;
+    }
+    base = addPiece(env, base, (rot + 2) & 3, 4, y, 0, PT.BRIDGE_END);
+    base.depth = -1;
+    return true;
+}
+
+function genHouseTower(env, current, depth) {
+    if (depth > 8) return false;
+    const rng = env.rng, rot = current.rot;
+    let base = current;
+    base = addPiece(env, base, rot, -3, env.y, -11, PT.BASE_FLOOR);
+    const size = rng.nextInt(3);
+    if (size === 0) {
+        addPiece(env, base, rot, -1, 4, -1, PT.BASE_ROOF);
+        return true;
+    }
+    base = addPiece(env, base, rot, -1, 0, -1, PT.SECOND_FLOOR_2);
+    if (size === 1) {
+        base = addPiece(env, base, rot, -1, 8, -1, PT.SECOND_ROOF);
+    } else {
+        base = addPiece(env, base, rot, -1, 4, -1, PT.THIRD_FLOOR_2);
+        base = addPiece(env, base, rot, -1, 8, -1, PT.THIRD_ROOF);
+    }
+    genPiecesRecursively(genTower, env, base, depth + 1);
+    return true;
+}
+
+function genFatTower(env, current, depth) {
+    const rng = env.rng, rot = current.rot;
+    let base = current;
+    base = addPiece(env, base, rot, -3, 4, -3, PT.FAT_TOWER_BASE);
+    base = addPiece(env, base, rot, 0, 4, 0, PT.FAT_TOWER_MIDDLE);
+    const binfo = [[0, 4, -1, 0], [1, 12, -1, 4], [3, 0, -1, 8], [2, 8, -1, 12]];
+    for (let j = 0; j < 2 && rng.nextInt(3) !== 0; j++) {
+        base = addPiece(env, base, rot, 0, 8, 0, PT.FAT_TOWER_MIDDLE);
+        for (let i = 0; i < 4; i++) {
+            if (!rng.next(1)) continue;
+            const brot = (rot + binfo[i][0]) & 3;
+            const bridge = addPiece(env, base, brot, binfo[i][1], binfo[i][2], binfo[i][3], PT.BRIDGE_END);
+            genPiecesRecursively(genBridge, env, bridge, depth + 1);
+        }
+    }
+    addPiece(env, base, rot, -2, 8, -2, PT.FAT_TOWER_TOP);
+    return true;
+}
+
+function getEndCityPieces(seed, chunkX, chunkZ) {
+    const rng = chunkGenerateRnd(seed, chunkX, chunkZ);
+    const rot = rng.nextInt(4);
+    const env = { list: [], rng, ship: { v: 0 }, y: 0 };
+    const x = chunkX * 16 + 8, z = chunkZ * 16 + 8;
+    let base = null;
+    base = addPiece(env, base, rot, x, 0, z, PT.BASE_FLOOR);
+    base = addPiece(env, base, rot, -1, 0, -1, PT.SECOND_FLOOR_1);
+    base = addPiece(env, base, rot, -1, 4, -1, PT.THIRD_FLOOR_1);
+    base = addPiece(env, base, rot, -1, 8, -1, PT.THIRD_ROOF);
+    genPiecesRecursively(genTower, env, base, 1);
+    return env.list;
+}
+
+/* ---------- Поиск городов и кораблей ------------------------------------- */
+
+/* Генератор: можно прерывать (yield) по таймеру. ctx.due() -> true, когда пора
+   вернуть управление браузеру. Возвращает { cities, ncity }. */
+function* searchCities(o, ctx) {
+    const w = makeWorld(o.seed, o.version);
+    const bpr = 20 * 16;
+    const rx0 = Math.floor((o.cx - o.radius) / bpr), rx1 = Math.ceil((o.cx + o.radius) / bpr);
+    const rz0 = Math.floor((o.cz - o.radius) / bpr), rz1 = Math.ceil((o.cz + o.radius) / bpr);
+    const total = (rx1 - rx0 + 1) * (rz1 - rz0 + 1);
+    const res = [];
+    let ncity = 0, done = 0;
+
+    for (let j = rz0; j <= rz1; j++) {
+        for (let i = rx0; i <= rx1; i++) {
+            done++;
+            if (ctx && ctx.due()) yield { phase: 'search', done, total, found: res.length };
+
+            const pos = getEndCityPos(o.seed, i, j);
+            if (pos.x * pos.x + pos.z * pos.z < 1008 * 1008) continue;   // центральный остров
+            const dx = pos.x - o.cx, dz = pos.z - o.cz;
+            const dist = Math.sqrt(dx * dx + dz * dz);
+            if (dist > o.radius) continue;
+
+            const chunkX = pos.x >> 4, chunkZ = pos.z >> 4;
+            const biome = endCityBiome(w, chunkX, chunkZ);
+            if (!biome) continue;
+
+            const baseY = isViableEndCityTerrain(w, pos.x, pos.z, true);
+            if (!baseY) continue;
+            ncity++;
+
+            const pieces = getEndCityPieces(o.seed, chunkX, chunkZ);
+            let found = false;
+            for (let k = 0; k < pieces.length; k++) {
+                const p = pieces[k];
+                if (p.type !== PT.END_SHIP) continue;
+                if (!found) {
+                    res.push({
+                        sx: Math.trunc((p.x0 + p.x1) / 2),
+                        sz: Math.trunc((p.z0 + p.z1) / 2),
+                        sy: baseY + p.y0,
+                        cx: pos.x, cz: pos.z, ships: 0, dist, biome, baseY,
+                    });
+                }
+                res[res.length - 1].ships++;
+                found = true;
+            }
+            if (!found && o.all) {
+                res.push({ sx: pos.x, sz: pos.z, sy: baseY, cx: pos.x, cz: pos.z,
+                           ships: 0, dist, biome, baseY });
+            }
+        }
+    }
+    res.sort((a, b) => a.dist - b.dist);
+    return { cities: res, ncity };
+}
+
+/* ---------- Маршрут: коммивояжёр (порт из endship.c) --------------------- */
+
+const MASK64 = (1n << 64n) - 1n;
+
+function makeRng(seedStr) {
+    let s = 0x9E3779B97F4A7C15n;
+    if (seedStr !== undefined && seedStr !== null && seedStr !== '') {
+        try { s = (BigInt.asUintN(64, BigInt(seedStr)) | 1n); } catch (e) { /* по умолчанию */ }
+    }
+    return (n) => {
+        s ^= (s << 13n) & MASK64;
+        s ^= s >> 7n;
+        s ^= (s << 17n) & MASK64;
+        return Number(s % BigInt(n));
+    };
+}
+
+function makeGeom(PX, PZ) {
+    const D = (a, b) => {
+        const dx = PX[a] - PX[b], dz = PZ[a] - PZ[b];
+        return Math.sqrt(dx * dx + dz * dz);
+    };
+    const tourLen = (r, m, loop) => {
+        let L = 0;
+        for (let i = 0; i + 1 < m; i++) L += D(r[i], r[i + 1]);
+        if (loop && m > 1) L += D(r[m - 1], r[0]);
+        return L;
+    };
+    return { D, tourLen };
+}
+
+// Жадная вставка (cheapest insertion) с GRASP-рандомизацией
+function* buildRoute(G, rnd, ctx, r, n, stops, maxleg, loop, rcl) {
+    const D = G.D;
+    const used = new Uint8Array(n + 1);
+    let m = 1;
+    r[0] = 0;
+    used[0] = 1;
+    if (rcl < 1) rcl = 1;
+    if (rcl > 8) rcl = 8;
+    const bc = new Int32Array(8), bp = new Int32Array(8), bd = new Float64Array(8);
+
+    while (stops < 0 || m - 1 < stops) {
+        if (ctx && ctx.due()) yield null;
+        let nb = 0;
+        for (let c = 1; c <= n; c++) {
+            if (used[c]) continue;
+            let cd = 1e300, cp = -1;
+            for (let p = 0; p + 1 < m; p++) {
+                const delta = D(r[p], c) + D(c, r[p + 1]) - D(r[p], r[p + 1]);
+                if (delta < cd) { cd = delta; cp = p + 1; }
+            }
+            let delta;
+            if (loop && m > 1) delta = D(r[m - 1], c) + D(c, r[0]) - D(r[m - 1], r[0]);
+            else if (loop)     delta = 2 * D(r[0], c);
+            else               delta = D(r[m - 1], c);
+            if (delta < cd) { cd = delta; cp = m; }
+
+            if (maxleg > 0 && cd > maxleg) continue;
+
+            let q;
+            if (nb < rcl) q = nb++;
+            else if (cd < bd[nb - 1]) q = nb - 1;
+            else continue;
+            while (q > 0 && bd[q - 1] > cd) {
+                bd[q] = bd[q - 1]; bc[q] = bc[q - 1]; bp[q] = bp[q - 1]; q--;
+            }
+            bd[q] = cd; bc[q] = c; bp[q] = cp;
+        }
+        if (nb === 0) break;
+        const pick = (nb > 1) ? rnd(nb) : 0;
+        r.copyWithin(bp[pick] + 1, bp[pick], m);
+        r[bp[pick]] = bc[pick];
+        used[bc[pick]] = 1;
+        m++;
+    }
+    return m;
+}
+
+function reverse(r, i, j) {
+    while (i < j) { const t = r[i]; r[i] = r[j]; r[j] = t; i++; j--; }
+}
+
+function* twoOpt(G, ctx, r, m, loop) {
+    const D = G.D;
+    let improved = 0;
+    for (let i = 1; i < m - 1; i++) {
+        if (ctx && ctx.due()) yield null;
+        for (let j = i + 1; j < m; j++) {
+            const a = r[i - 1], b = r[i], c = r[j];
+            let gain;
+            if (j + 1 < m || loop) {
+                const d2 = r[(j + 1) % m];
+                gain = D(a, b) + D(c, d2) - D(a, c) - D(b, d2);
+            } else {
+                gain = D(a, b) - D(a, c);
+            }
+            if (gain > 1e-9) { reverse(r, i, j); improved = 1; }
+        }
+    }
+    return improved;
+}
+
+function* orOpt(G, ctx, r, m, loop, tmp) {
+    const D = G.D;
+    let improved = 0;
+    const seg = [0, 0, 0];
+    for (let len = 1; len <= 3 && len < m - 1; len++) {
+        for (let i = 1; i + len <= m; i++) {
+            if (ctx && ctx.due()) yield null;
+            const prev = r[i - 1], sfirst = r[i], slast = r[i + len - 1];
+            const hasNext = (i + len < m) || loop;
+            const next = hasNext ? r[(i + len) % m] : -1;
+
+            let removed = D(prev, sfirst);
+            if (hasNext) removed += D(slast, next) - D(prev, next);
+            if (removed <= 1e-9) continue;
+
+            for (let t = 0; t < len; t++) seg[t] = r[i + t];
+            let k = 0;
+            for (let t = 0; t < m; t++) if (t < i || t >= i + len) tmp[k++] = r[t];
+
+            let bestP = -1, bestRev = 0, bestGain = 1e-9;
+            for (let p = 1; p <= k; p++) {
+                const a = tmp[p - 1];
+                const hasB = (p < k) || loop;
+                const b = hasB ? tmp[p % k] : -1;
+                const cut = hasB ? D(a, b) : 0;
+                for (let rev = 0; rev < 2; rev++) {
+                    const f = rev ? slast : sfirst;
+                    const l = rev ? sfirst : slast;
+                    const added = D(a, f) + (hasB ? D(l, b) - cut : 0);
+                    if (removed - added > bestGain) {
+                        bestGain = removed - added; bestP = p; bestRev = rev;
+                    }
+                    if (len === 1) break;
+                }
+            }
+            if (bestP >= 0) {
+                let idx = 0;
+                for (let t = 0; t < bestP; t++) r[idx++] = tmp[t];
+                for (let t = 0; t < len; t++) r[idx++] = seg[bestRev ? len - 1 - t : t];
+                for (let t = bestP; t < k; t++) r[idx++] = tmp[t];
+                improved = 1;
+            }
+        }
+    }
+    return improved;
+}
+
+function* reorder(G, ctx, r, m, loop, tmp) {
+    for (let it = 0; it < 60; it++) {
+        const a = yield* twoOpt(G, ctx, r, m, loop);
+        const b = yield* orOpt(G, ctx, r, m, loop, tmp);
+        if (!a && !b) break;
+    }
+}
+
+function* swapMove(G, ctx, r, m, n, loop, tmp) {
+    const D = G.D;
+    if (m < 2) return 0;
+    const used = new Uint8Array(n + 1);
+    for (let i = 0; i < m; i++) used[r[i]] = 1;
+    let freeCnt = 0;
+    for (let c = 1; c <= n; c++) if (!used[c]) freeCnt++;
+    if (!freeCnt) return 0;
+
+    let bestI = -1, bestC = -1, bestP = -1, bestGain = 1e-9;
+    for (let i = 1; i < m; i++) {
+        if (ctx && ctx.due()) yield null;
+        const prev = r[i - 1];
+        const hasNext = (i + 1 < m) || loop;
+        const next = hasNext ? r[(i + 1) % m] : -1;
+        let drop = D(prev, r[i]);
+        if (hasNext) drop += D(r[i], next) - D(prev, next);
+
+        let k = 0;
+        for (let t = 0; t < m; t++) if (t !== i) tmp[k++] = r[t];
+
+        for (let c = 1; c <= n; c++) {
+            if (used[c]) continue;
+            let add = 1e300, pos = -1;
+            for (let p = 1; p <= k; p++) {
+                const a = tmp[p - 1];
+                const hasB = (p < k) || loop;
+                let cost = D(a, c);
+                if (hasB) { const b = tmp[p % k]; cost += D(c, b) - D(a, b); }
+                if (cost < add) { add = cost; pos = p; }
+            }
+            if (drop - add > bestGain) {
+                bestGain = drop - add; bestI = i; bestC = c; bestP = pos;
+            }
+        }
+    }
+    if (bestI > 0) {
+        let k = 0;
+        for (let t = 0; t < m; t++) if (t !== bestI) tmp[k++] = r[t];
+        let idx = 0;
+        for (let t = 0; t < bestP; t++) r[idx++] = tmp[t];
+        r[idx++] = bestC;
+        for (let t = bestP; t < k; t++) r[idx++] = tmp[t];
+    }
+    return bestI > 0 ? 1 : 0;
+}
+
+function* optimize(G, ctx, r, m, n, loop, tmp) {
+    yield* reorder(G, ctx, r, m, loop, tmp);
+    for (let it = 0; it < 500; it++) {
+        if (!(yield* swapMove(G, ctx, r, m, n, loop, tmp))) break;
+        yield* reorder(G, ctx, r, m, loop, tmp);
+    }
+    return G.tourLen(r, m, loop);
+}
+
+/* Планирование маршрута. res — массив городов из searchCities.
+   opts: { startx, startz, stops (<=0 — все), maxleg, loop, restarts, rngseed } */
+function* planRoute(res, opts, ctx) {
+    const n = res.length;
+    const PX = new Float64Array(n + 1), PZ = new Float64Array(n + 1);
+    PX[0] = opts.startx; PZ[0] = opts.startz;
+    for (let k = 0; k < n; k++) { PX[k + 1] = res[k].sx; PZ[k + 1] = res[k].sz; }
+    const G = makeGeom(PX, PZ);
+    const rnd = makeRng(opts.rngseed);
+    const loop = opts.loop ? 1 : 0;
+    const stops = opts.stops > 0 ? opts.stops : -1;
+    const restarts = Math.max(1, opts.restarts | 0);
+
+    const r = new Int32Array(n + 1), best = new Int32Array(n + 1);
+    const tmp = new Int32Array(n + 2);
+
+    const m = yield* buildRoute(G, rnd, ctx, r, n, stops, opts.maxleg || 0, loop, 1);
+    const greedy = G.tourLen(r, m, loop);
+    let bestLen = yield* optimize(G, ctx, r, m, n, loop, tmp);
+    best.set(r.subarray(0, m));
+    const fixedStops = m - 1;
+    const firstLen = bestLen;
+
+    for (let t = 1; t < restarts && fixedStops < n; t++) {
+        yield { phase: 'route', done: t, total: restarts, best: bestLen };
+        const mm = yield* buildRoute(G, rnd, ctx, r, n, fixedStops, 0, loop, 3);
+        if (mm !== m) continue;
+        const L = yield* optimize(G, ctx, r, mm, n, loop, tmp);
+        if (L < bestLen - 1e-9) { bestLen = L; best.set(r.subarray(0, mm)); }
+    }
+
+    const order = [];
+    for (let i = 1; i < m; i++) order.push(best[i] - 1);
+    const legs = [];
+    let acc = 0;
+    for (let i = 1; i < m; i++) { const l = G.D(best[i - 1], best[i]); acc += l; legs.push(l); }
+    const back = (loop && m > 1) ? G.D(best[m - 1], best[0]) : 0;
+    return { order, legs, total: bestLen, greedy, first: firstLen, back, restarts, loop: !!loop };
+}
+
+/* ---------- Xaero's Minimap waypoints ------------------------------------ */
+
+const GRAD = [10, 14, 6, 12, 4, 5];                 // зелёный → … → фиолетовый
+const HEADER = '#\n#waypoint:name:initials:x:y:z:color:disabled:type:set:' +
+               'rotate_on_tp:tp_yaw:visibility_type:destination\n#\n';
+const pad2 = (n) => (n < 10 ? '0' : '') + n;
+
+// В списке цвет — градиент по удалённости: ближайший зелёный, самый дальний фиолетовый.
+function xaeroList(res) {
+    let s = HEADER;
+    const n = res.length;
+    res.forEach((c, k) => {
+        const ci = n > 1 ? Math.floor((k * (GRAD.length - 1)) / (n - 1)) : 0;
+        s += `waypoint:${c.ships ? 'Ship' : 'City'}${pad2(k + 1)}_${c.dist.toFixed(0)}m:S${k + 1}:` +
+             `${c.sx}:${c.sy}:${c.sz}:${GRAD[ci]}:false:0:gui.xaero_default:false:0:0:false\n`;
+    });
+    return s;
+}
+
+function xaeroRoute(res, route) {
+    let s = HEADER;
+    const nst = route.order.length;
+    route.order.forEach((idx, i) => {
+        const c = res[idx];
+        const ci = nst > 1 ? Math.floor((i * (GRAD.length - 1)) / (nst - 1)) : 0;
+        s += `waypoint:R${pad2(i + 1)}_${route.legs[i].toFixed(0)}m:${i + 1}:` +
+             `${c.sx}:${c.sy}:${c.sz}:${GRAD[ci]}:false:0:gui.xaero_default:false:0:0:false\n`;
+    });
+    return s;
+}
+
+/* ---------- Разбор сида как в Minecraft ---------------------------------- */
+
+function parseSeed(str) {
+    str = String(str).trim();
+    if (!str) return null;
+    if (/^-?\d+$/.test(str)) {
+        const b = BigInt(str);
+        if (b >= -(1n << 63n) && b < (1n << 63n)) return { seed: b, kind: 'number' };
+    }
+    // как String.hashCode() в Java
+    let h = 0;
+    for (let i = 0; i < str.length; i++) h = (Math.imul(31, h) + str.charCodeAt(i)) | 0;
+    return { seed: BigInt(h), kind: 'text' };
+}
+
+return {
+    VERSIONS, GRAD, PT, parseSeed, searchCities, planRoute, xaeroList, xaeroRoute,
+    // для тестов
+    _t: { getEndCityPos, makeWorld, endBiomeAtChunk, endCityBiome, isViableEndCityTerrain,
+          getEndCityPieces, JRandom, chunkGenerateRnd },
+};
+})();
+
+if (typeof module !== 'undefined') module.exports = EndShip;
+
+</script>
+<script>
+(() => {
+'use strict';
+
+/* ==========================================================================
+   Translations. English is the default; Russian is switchable (EN / RU).
+   ========================================================================== */
+const I18N = {
+  en: {
+    docTitle: 'End Ships: elytra finder and route planner',
+    title: 'End Ships',
+    lead: "Finds End cities with a ship (that's where the elytra is) from a world seed and plans a short route through several of them.",
+    world: 'World', seed: 'Seed', seedPh: 'a number or text, as in the game', version: 'Minecraft version (Java)',
+    where: 'Where to search', yourX: 'Your X', yourZ: 'Your Z', radius: 'Search radius, blocks',
+    allLbl: 'Include cities without a ship', allHint: 'They also go into the list and the route.',
+    what: 'What to get', modeAria: 'Mode', modeRoute: 'Route', modeList: 'List',
+    stopsRoute: 'How many ships to visit', stopsList: 'How many nearest to show', stopsAll: 'all',
+    loopLbl: 'Return to the start', loopHint: 'The route will close back at your point.',
+    maxlegLbl: "Don't detour further than, blocks", maxlegHint: "A detour for a single ship won't be longer than this. 0 means no limit.",
+    effortLbl: 'How hard to work on the route',
+    effort10: 'Quick (10 attempts)', effort100: 'Normal (100 attempts)', effort500: 'Thorough (500 attempts)', effort3000: 'Maximum (3000 attempts)',
+    effortHint: 'Each attempt starts over and looks for a better route. More attempts take longer and usually give a slightly shorter path.',
+    adv: 'Advanced', useStartLbl: 'Start the route somewhere other than the search point', startX: 'Start X', startZ: 'Start Z',
+    rngLbl: 'Repeatability number', rngPh: 'empty for the default', rngHint: 'With the same number, the attempts give the same route.',
+    go: 'Find', stop: 'Stop',
+    stageAria: 'Result', mapAria: 'End map: cities with ships and the route. Arrow keys pan the map, plus and minus zoom.',
+    emptyT: 'Nothing yet', emptyD: 'Enter a seed and press Find. Ships and the path between them will appear here.',
+    zin: 'Zoom in', zout: 'Zoom out', zfit: 'Fit', zrad: 'Whole radius',
+    lgShown: 'in the list or route', lgOthers: 'other ships', lgCity: 'city without a ship', lgRadius: 'search radius',
+    exportH: 'Waypoints for your minimap', fmtAria: 'Format', outAria: 'Text to export', copyAll: 'Copy all', saveFile: 'Save file',
+    expHint: 'Paste the waypoint: lines into your Xaero waypoints file for the End (the XaeroWaypoints folder, then the dim%1 subfolder inside your world), or import them any other way. The color from green to purple shows the order.',
+    about: 'How it works',
+    aboutSearch: '<b>Search.</b> Uses the same world generation rules as the game: the 20×20-chunk region grid, a biome check on the outer islands, a terrain check (height of at least 60 under all four corners of the city) and assembly of the towers and bridges to see whether the city has a ship. The algorithm is ported from cubiomes; the output was compared with a C program on several seeds and versions, and every coordinate matched.',
+    aboutRoute: '<b>Route.</b> Greedy insertion, then reordering (2-opt, Or-opt), swapping ships for better-placed ones, and random restarts. Distances are straight lines in the X/Z plane; height is ignored.',
+    aboutLimits: "<b>Limits.</b> Java Edition only, 1.13 and newer. Bedrock generates the world differently, so its seeds don't match. Y in the table is the level of the ship's hull bottom.",
+    // dynamic
+    radiusHint: 'End coordinates. There are no cities closer than 1008 blocks to the center.',
+    radiusBig: 'Large radius: the search may take about {s} s. You can stop it.',
+    seedText: 'The text was turned into the number {n} (the game does the same). ', demo: 'Use an example',
+    errSeed: 'Enter the world seed: a number or any text, as when creating the world.',
+    errX: 'X must be a number.', errZ: 'Z must be a number.', errSX: 'Start X must be a number.', errSZ: 'Start Z must be a number.',
+    errStops: 'Number of ships: a whole number from 1. Or tick “all”.',
+    searching: 'Searching for End cities…', searchingA: 'Searching for End cities',
+    searchProg: 'Searching for End cities: checked {done} of {total} areas, found {found}',
+    routing: 'Building the route…', routingA: 'Building the route',
+    routeProg: 'Looking for a shorter route: attempt {done} of {total}, best {best} blocks',
+    stopped: 'Search stopped.', routeStopped: 'Route building stopped. Showing the list of ships found.',
+    none: 'No ships found. Increase the radius or include cities without a ship.',
+    done: 'Done in {s} s.', failed: 'Something went wrong: {msg}',
+    sumCities: 'End cities within a radius of {r}: <b>{n}</b>, of them with a ship: <b>{w}</b>.',
+    sumRoute: 'Route: <b>{n}</b> {stops}, <b>{len}</b> blocks', sumAvg: ', <b>{avg}</b> per elytra on average',
+    sumLoopEnd: ' (returning to the start).', sumEnd: '.',
+    pStop: ['stop', 'stops'], pAttempt: ['attempt', 'attempts'],
+    sumSub: 'Greedy insertion {g}, after improving order and choice of ships {f}, after {r} {att} {t}{gain}.',
+    sumGain: ' ({p}% shorter)',
+    sumFewer: ' Fewer stops than requested: the remaining ships are farther than the allowed detour.',
+    sumList: 'Showing the nearest <b>{n}</b> to the point ({x}, {z}).',
+    thNum: '#', thLeg: 'Leg', thTotal: 'Total', thAvg: 'Average', thCenter: 'From center', noShip: 'no ship',
+    more: 'Show {n} more', moreLeft: ' ({left} left)',
+    selShip: 'Ship', selCity: 'City without a ship', selStop: ', stop {n}', selNum: ', number {n}', selOut: ', not in the list',
+    dtStart: 'From start, straight line', dtLeg: 'Leg to it', dtCenter: 'City center',
+    bXYZ: 'Copy X Y Z', bTp: 'Copy /tp above the ship', bClear: 'Clear selection',
+    toastXYZ: 'Coordinates copied', toastTp: 'Command copied', copied: 'Copied', copiedX: 'Copied: Xaero waypoints', copiedC: 'Copied: CSV',
+    copyFail: "Couldn't copy. Select the text manually.", saved: 'File saved', saveFallback: 'Saving is unavailable, text copied',
+    tipStop: ' stop {n}', tipNum: ' #{n}', tipFrom: 'from start {d} blocks', tipLeg: 'leg {d} blocks',
+    mapYou: 'you', mapRing: 'no cities closer than 1008',
+  },
+  ru: {
+    docTitle: 'Корабли Энда: поиск элитр и маршрут',
+    title: 'Корабли Энда',
+    lead: 'Находит энд-города с кораблём (в нём лежит элитра) по сиду мира и строит короткий маршрут по нескольким из них.',
+    world: 'Мир', seed: 'Сид', seedPh: 'число или текст, как в игре', version: 'Версия Minecraft (Java)',
+    where: 'Где искать', yourX: 'Ваш X', yourZ: 'Ваш Z', radius: 'Радиус поиска, блоков',
+    allLbl: 'Добавить города без корабля', allHint: 'Они тоже попадут в список и маршрут.',
+    what: 'Что получить', modeAria: 'Режим', modeRoute: 'Маршрут', modeList: 'Список',
+    stopsRoute: 'Сколько кораблей посетить', stopsList: 'Сколько ближайших показать', stopsAll: 'все',
+    loopLbl: 'Вернуться в начало', loopHint: 'Маршрут замкнётся на вашей точке.',
+    maxlegLbl: 'Не уходить за кораблём дальше, блоков', maxlegHint: 'Крюк ради одного корабля не будет длиннее. 0 — без ограничения.',
+    effortLbl: 'Насколько стараться с маршрутом',
+    effort10: 'Быстро (10 попыток)', effort100: 'Обычно (100 попыток)', effort500: 'Тщательно (500 попыток)', effort3000: 'Максимум (3000 попыток)',
+    effortHint: 'Каждая попытка начинает заново и ищет лучше. Чем больше, тем дольше и обычно чуть короче путь.',
+    adv: 'Дополнительно', useStartLbl: 'Начать маршрут не из точки поиска', startX: 'Старт X', startZ: 'Старт Z',
+    rngLbl: 'Число для повторяемости', rngPh: 'пусто — как по умолчанию', rngHint: 'С одним и тем же числом попытки дадут тот же маршрут.',
+    go: 'Найти', stop: 'Остановить',
+    stageAria: 'Результат', mapAria: 'Карта Энда: города с кораблями и маршрут. Стрелки двигают карту, плюс и минус меняют масштаб.',
+    emptyT: 'Пока пусто', emptyD: 'Введите сид и нажмите «Найти». Здесь появятся корабли и путь между ними.',
+    zin: 'Приблизить', zout: 'Отдалить', zfit: 'Вписать', zrad: 'Весь радиус',
+    lgShown: 'в списке или маршруте', lgOthers: 'другие корабли', lgCity: 'город без корабля', lgRadius: 'радиус поиска',
+    exportH: 'Точки для мини-карты', fmtAria: 'Формат', outAria: 'Текст для экспорта', copyAll: 'Скопировать всё', saveFile: 'Сохранить файл',
+    expHint: 'Строки waypoint: вставьте в файл точек Xaero для Энда (папка XaeroWaypoints, внутри мира подпапка dim%1) или импортируйте любым способом. Цвет от зелёного к фиолетовому показывает порядок.',
+    about: 'Как это считается',
+    aboutSearch: '<b>Поиск.</b> Используются те же правила генерации мира, что и в игре: сетка регионов 20×20 чанков, проверка биома на внешних островах, проверка рельефа (под четырьмя углами города высота не меньше 60) и сборка башен и мостов, чтобы понять, есть ли в городе корабль. Алгоритм перенесён из cubiomes; результат сверен с программой на C по нескольким сидам и версиям: все координаты совпали.',
+    aboutRoute: '<b>Маршрут.</b> Жадная вставка, затем перестановка порядка (2‑opt, Or‑opt), замена кораблей на более удобные и случайные повторные попытки. Расстояния считаются по прямой в плоскости X и Z, высота не учитывается.',
+    aboutLimits: '<b>Ограничения.</b> Только Java Edition, версии от 1.13. В Bedrock мир генерируется иначе, сиды не совпадают. Y в таблице: уровень низа корпуса корабля.',
+    radiusHint: 'Координаты в Энде. Ближе 1008 блоков к центру городов нет.',
+    radiusBig: 'Большой радиус: поиск может занять около {s} с. Его можно остановить.',
+    seedText: 'Текст превращён в число {n} (так делает игра). ', demo: 'Подставить пример',
+    errSeed: 'Введите сид мира: число или любой текст, как при создании мира.',
+    errX: 'X должен быть числом.', errZ: 'Z должен быть числом.', errSX: 'Старт X должен быть числом.', errSZ: 'Старт Z должен быть числом.',
+    errStops: 'Число кораблей: целое от 1. Или отметьте «все».',
+    searching: 'Ищу энд-города…', searchingA: 'Ищу энд-города',
+    searchProg: 'Ищу энд-города: проверено {done} из {total} областей, найдено {found}',
+    routing: 'Строю маршрут…', routingA: 'Строю маршрут',
+    routeProg: 'Ищу маршрут короче: попытка {done} из {total}, лучший {best} блоков',
+    stopped: 'Поиск остановлен.', routeStopped: 'Построение маршрута остановлено. Показан список найденных кораблей.',
+    none: 'Кораблей не найдено. Увеличьте радиус или добавьте города без корабля.',
+    done: 'Готово за {s} с.', failed: 'Что-то пошло не так: {msg}',
+    sumCities: 'Энд-городов в радиусе {r}: <b>{n}</b>, из них с кораблём: <b>{w}</b>.',
+    sumRoute: 'Маршрут: <b>{n}</b> {stops}, <b>{len}</b> блоков', sumAvg: ', в среднем <b>{avg}</b> на элитру',
+    sumLoopEnd: ' (с возвратом в начало).', sumEnd: '.',
+    pStop: ['остановка', 'остановки', 'остановок'], pAttempt: ['попытка', 'попытки', 'попыток'],
+    sumSub: 'Жадная вставка {g}, после улучшения порядка и состава {f}, после {r} {att} {t}{gain}.',
+    sumGain: ' (короче на {p}%)',
+    sumFewer: ' Остановок меньше запрошенного: следующие корабли дальше допустимого крюка.',
+    sumList: 'Показаны ближайшие <b>{n}</b> от точки ({x}, {z}).',
+    thNum: '№', thLeg: 'Ход', thTotal: 'Всего', thAvg: 'В среднем', thCenter: 'От центра', noShip: 'без корабля',
+    more: 'Показать ещё {n}', moreLeft: ' (осталось {left})',
+    selShip: 'Корабль', selCity: 'Город без корабля', selStop: ', остановка {n}', selNum: ', номер {n}', selOut: ', вне списка',
+    dtStart: 'От старта по прямой', dtLeg: 'Ход до него', dtCenter: 'Центр города',
+    bXYZ: 'Копировать X Y Z', bTp: 'Копировать /tp над кораблём', bClear: 'Снять выбор',
+    toastXYZ: 'Координаты скопированы', toastTp: 'Команда скопирована', copied: 'Скопировано', copiedX: 'Скопировано: точки Xaero', copiedC: 'Скопировано: CSV',
+    copyFail: 'Не вышло скопировать. Выделите текст вручную.', saved: 'Файл сохранён', saveFallback: 'Сохранение недоступно, текст скопирован',
+    tipStop: ' остановка {n}', tipNum: ' № {n}', tipFrom: 'от старта {d} блоков', tipLeg: 'ход {d} блоков',
+    mapYou: 'вы', mapRing: 'ближе 1008 городов нет',
+  },
+};
+const LANG_KEY = 'endship.lang';
+let LANG = 'en';
+const t = (key, p) => {
+  let s = (I18N[LANG] && I18N[LANG][key]);
+  if (s === undefined) s = I18N.en[key];
+  if (s === undefined) return key;
+  return p ? s.replace(/\{(\w+)\}/g, (m, k) => (k in p ? p[k] : m)) : s;
+};
+// склонение: en — 2 формы, ru — 3 формы
+const plural = (key, n) => {
+  const f = t(key);
+  if (LANG === 'ru') {
+    const m10 = n % 10, m100 = n % 100;
+    if (m10 === 1 && m100 !== 11) return f[0];
+    if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return f[1];
+    return f[2];
+  }
+  return n === 1 ? f[0] : f[1];
+};
+let nf, nf1, nf2;
+const fmt = (n) => nf.format(Math.round(n));
+
+/* ---------- утилиты ---------- */
+const $ = (s) => document.querySelector(s);
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+const PAL = ['#55FF55', '#FFFF55', '#FFAA00', '#FF5555', '#AA0000', '#AA00AA'];   // коды цветов Xaero 10,14,6,12,4,5
+const palIdx = (i, n) => (n > 1 ? Math.floor((i * 5) / (n - 1)) : 0);
+const STORE = 'endship.settings.v1';
+
+const el = {};
+['form','seed','seedHint','version','cx','cz','radius','radiusChips','radiusHint','all','stops','stopsAll','stopsLabel',
+ 'routeOpts','loop','maxleg','effort','useStart','sx','sz','rngseed','go','stopBtn','map','mapwrap','empty','zin','zout','zfit','zrad',
+ 'mapctl','lgC','tip','status','msg','barfill','live','sel','results','sum','tbl','more','moreBtn','fx','fc','out','copyOut','saveOut','outHint','toast','stage']
+ .forEach((id) => { el[id] = document.getElementById(id); });
+const modeRadios = () => document.querySelectorAll('input[name=mode]');
+const getMode = () => document.querySelector('input[name=mode]:checked').value;
+
+let toastTimer = 0;
+function toast(text) {
+  el.toast.textContent = text;
+  el.toast.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.toast.classList.remove('show'), 2200);
+}
+async function copyText(text, msg) {
+  try { await navigator.clipboard.writeText(text); toast(msg || t('copied')); return true; } catch (e) { /* запасной путь */ }
+  try {
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.style.cssText = 'position:fixed;opacity:0;top:0;left:0';
+    document.body.appendChild(ta); ta.select();
+    const ok = document.execCommand('copy'); ta.remove();
+    if (ok) { toast(msg || t('copied')); return true; }
+  } catch (e) { /* ничего */ }
+  toast(t('copyFail'));
+  return false;
+}
+
+/* ---------- версии, настройки ---------- */
+EndShip.VERSIONS.forEach((v) => {
+  const o = document.createElement('option'); o.value = v.id; o.textContent = v.label; el.version.appendChild(o);
+});
+
+function loadSettings() {
+  try {
+    const s = JSON.parse(localStorage.getItem(STORE) || 'null');
+    if (!s) return;
+    for (const k of ['seed','version','cx','cz','radius','stops','maxleg','effort','sx','sz','rngseed']) if (k in s && el[k]) el[k].value = s[k];
+    for (const k of ['all','stopsAll','loop','useStart']) if (k in s) el[k].checked = !!s[k];
+    if (s.mode) modeRadios().forEach((r) => { r.checked = r.value === s.mode; });
+  } catch (e) { /* хранилище может быть пустым или закрытым */ }
+}
+function saveSettings() {
+  try {
+    const s = { mode: getMode() };
+    for (const k of ['seed','version','cx','cz','radius','stops','maxleg','effort','sx','sz','rngseed']) s[k] = el[k].value;
+    for (const k of ['all','stopsAll','loop','useStart']) s[k] = el[k].checked;
+    localStorage.setItem(STORE, JSON.stringify(s));
+  } catch (e) { /* не страшно */ }
+}
+
+/* ---------- подсказки в форме ---------- */
+function fillDemo() {
+  el.seed.value = '12345'; el.cx.value = 0; el.cz.value = 0; el.radius.value = 6000;
+  syncForm(); el.seed.focus();
+}
+function syncForm() {
+  const route = getMode() === 'route';
+  el.routeOpts.hidden = !route;
+  el.stopsLabel.textContent = t(route ? 'stopsRoute' : 'stopsList');
+  el.stops.disabled = el.stopsAll.checked;
+  el.sx.disabled = el.sz.disabled = !el.useStart.checked;
+  const r = +el.radius.value || 0;
+  if (r > 25000) {
+    const sec = Math.round(2.4 * Math.pow(r / 30000, 2));
+    el.radiusHint.textContent = t('radiusBig', { s: Math.max(sec, 3) });
+    el.radiusHint.classList.add('warn');
+  } else {
+    el.radiusHint.textContent = t('radiusHint');
+    el.radiusHint.classList.remove('warn');
+  }
+  const info = EndShip.parseSeed(el.seed.value);
+  el.seedHint.textContent = (info && info.kind === 'text') ? t('seedText', { n: String(info.seed) }) : '';
+  const b = document.createElement('button');
+  b.type = 'button'; b.className = 'btn link'; b.textContent = t('demo');
+  b.addEventListener('click', fillDemo);
+  el.seedHint.appendChild(b);
+}
+['input','change'].forEach((ev) => el.form.addEventListener(ev, syncForm));
+el.radiusChips.addEventListener('click', (e) => {
+  const b = e.target.closest('button[data-r]'); if (!b) return;
+  el.radius.value = b.dataset.r; syncForm();
+});
+
+/* ---------- чтение параметров ---------- */
+function fail(field, msg) {
+  setStatus(msg, 'err');
+  if (field) { field.setAttribute('aria-invalid', 'true'); field.focus(); }
+  return null;
+}
+function readParams() {
+  ['seed','cx','cz','radius','stops','maxleg','sx','sz'].forEach((k) => el[k].removeAttribute('aria-invalid'));
+  const info = EndShip.parseSeed(el.seed.value);
+  if (!info) return fail(el.seed, () => t('errSeed'));
+  const num = (e, def) => { const v = e.value.trim() === '' ? def : Number(e.value); return Number.isFinite(v) ? Math.round(v) : NaN; };
+  const cx = num(el.cx, 0), cz = num(el.cz, 0);
+  if (Number.isNaN(cx)) return fail(el.cx, () => t('errX'));
+  if (Number.isNaN(cz)) return fail(el.cz, () => t('errZ'));
+  let radius = num(el.radius, 10000);
+  if (Number.isNaN(radius) || radius < 500) { radius = 500; el.radius.value = 500; }
+  if (radius > 150000) { radius = 150000; el.radius.value = 150000; }
+  const mode = getMode();
+  let stops = 0;
+  if (!el.stopsAll.checked) {
+    stops = num(el.stops, 15);
+    if (Number.isNaN(stops) || stops < 1) return fail(el.stops, () => t('errStops'));
+    stops = Math.min(stops, 5000);
+  }
+  const maxleg = Math.max(0, num(el.maxleg, 0) || 0);
+  let startx = cx, startz = cz;
+  if (el.useStart.checked) {
+    startx = num(el.sx, 0); startz = num(el.sz, 0);
+    if (Number.isNaN(startx)) return fail(el.sx, () => t('errSX'));
+    if (Number.isNaN(startz)) return fail(el.sz, () => t('errSZ'));
+  }
+  const all = el.all.checked;
+  const version = el.version.value;
+  return {
+    mode, stops, maxleg, loop: el.loop.checked, restarts: +el.effort.value,
+    rngseed: el.rngseed.value.trim() === '' ? undefined : String(Math.round(Number(el.rngseed.value))),
+    startx, startz,
+    search: { seed: info.seed, version, cx, cz, radius, all },
+    key: [info.seed, version, cx, cz, radius, all].join('|'),
+  };
+}
+
+/* ---------- запуск вычислений по кусочкам ---------- */
+const chan = typeof MessageChannel !== 'undefined' ? new MessageChannel() : null;
+let chanRes = null;
+if (chan) chan.port1.onmessage = () => { const r = chanRes; chanRes = null; if (r) r(); };
+const tick = () => new Promise((res) => { if (chan) { chanRes = res; chan.port2.postMessage(0); } else setTimeout(res, 0); });
+
+function makeCtx() { return { t0: performance.now(), due() { return performance.now() - this.t0 > 22; } }; }
+
+async function drive(gen, ctx, onProgress, token) {
+  for (;;) {
+    ctx.t0 = performance.now();
+    let last = null;
+    for (;;) {
+      const r = gen.next();
+      if (r.done) { return r.value; }
+      if (r.value) last = r.value;
+      if (performance.now() - ctx.t0 > 24) break;
+    }
+    if (last && onProgress) onProgress(last);
+    if (token.cancelled) return null;
+    await tick();
+    if (token.cancelled) return null;
+  }
+}
+
+/* ---------- статус ----------
+   Сообщение — строка или функция (тогда оно переводится заново при смене языка). */
+let lastMsgAt = 0, lastStatus = null;
+const resolve = (m) => (typeof m === 'function' ? m() : (m || ''));
+function announce(text) { el.live.textContent = text || ''; }
+function setStatus(msg, kind, progressFrac) {
+  lastStatus = { msg, kind };
+  el.status.className = 'status' + (kind ? ' ' + kind : '');
+  const text = resolve(msg);
+  el.msg.textContent = text;
+  if (progressFrac != null) { el.status.classList.add('busy'); el.barfill.style.width = Math.round(clamp(progressFrac, 0, 1) * 100) + '%'; }
+  else announce(text);
+}
+// ход вычисления: полоса обновляется всегда, текст не чаще четырёх раз в секунду
+function progress(text, frac) {
+  el.barfill.style.width = Math.round(clamp(frac, 0, 1) * 100) + '%';
+  const now = performance.now();
+  if (now - lastMsgAt > 250) { lastMsgAt = now; el.msg.textContent = text; }
+}
+
+/* ---------- состояние ---------- */
+const S = {
+  cities: [], ncity: 0, key: '', params: null,
+  route: null, shown: [], rank: null, mode: 'route',
+  sel: -1, rows: [], rowsShown: 0, fmt: 'xaero', routeCancelled: false,
+  running: false, token: null, ms: 0,
+};
+const ROWS_STEP = 200;
+
+let downloads = null;
+if (window.claude && typeof window.claude.use === 'function') {
+  window.claude.use('downloads').then((d) => { downloads = d; }).catch(() => {});
+}
+
+/* ---------- главный сценарий ---------- */
+async function run(e) {
+  if (e) e.preventDefault();
+  if (S.running) return;
+  const p = readParams();
+  if (!p) return;
+  saveSettings();
+  S.running = true; S.token = { cancelled: false };
+  el.go.disabled = true; el.stopBtn.hidden = false;
+  const t0 = performance.now();
+  try {
+    if (S.key !== p.key) {
+      setStatus(() => t('searching'), '', 0); announce(t('searchingA'));
+      const ctx = makeCtx();
+      const out = await drive(EndShip.searchCities(p.search, ctx), ctx, (v) => {
+        progress(t('searchProg', { done: fmt(v.done), total: fmt(v.total), found: fmt(v.found) }), v.done / v.total);
+      }, S.token);
+      if (!out) { setStatus(() => t('stopped')); return; }
+      S.cities = out.cities; S.ncity = out.ncity; S.key = p.key; S.route = null;
+    }
+    S.params = p; S.mode = p.mode; S.sel = -1;
+
+    let route = null, cancelledRoute = false;
+    if (p.mode === 'route' && S.cities.length) {
+      setStatus(() => t('routing'), '', 0); announce(t('routingA'));
+      const ctx = makeCtx();
+      route = await drive(EndShip.planRoute(S.cities, {
+        startx: p.startx, startz: p.startz, stops: p.stops, maxleg: p.maxleg, loop: p.loop,
+        restarts: p.restarts, rngseed: p.rngseed,
+      }, ctx), ctx, (v) => {
+        if (v.phase === 'route') progress(t('routeProg', { done: v.done, total: v.total, best: fmt(v.best) }), v.done / v.total);
+      }, S.token);
+      if (!route) cancelledRoute = true;
+    }
+    S.route = route; S.routeCancelled = cancelledRoute;
+    S.ms = performance.now() - t0;
+    buildView();
+    if (cancelledRoute) setStatus(() => t('routeStopped'));
+    else if (!S.cities.length) setStatus(() => t('none'));
+    else { const secs = S.ms / 1000; setStatus(() => t('done', { s: nf2.format(secs) })); }
+    if (window.matchMedia('(max-width: 920px)').matches) {
+      el.stage.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
+    }
+  } catch (err) {
+    console.error(err);
+    const m = err && err.message ? err.message : String(err);
+    setStatus(() => t('failed', { msg: m }), 'err');
+  } finally {
+    S.running = false; el.go.disabled = false; el.stopBtn.hidden = true;
+    el.status.classList.remove('busy');
+  }
+}
+el.form.addEventListener('submit', run);
+el.stopBtn.addEventListener('click', () => { if (S.token) S.token.cancelled = true; });
+
+/* ---------- подготовка отображения ---------- */
+function buildView() {
+  const p = S.params, cities = S.cities;
+  S.rank = new Int32Array(cities.length).fill(-1);
+  S.rows = [];
+  if (S.route && S.mode === 'route') {
+    S.shown = S.route.order.slice();
+    let acc = 0;
+    S.route.order.forEach((idx, i) => {
+      S.rank[idx] = i; acc += S.route.legs[i];
+      S.rows.push({ idx, rank: i, leg: S.route.legs[i], acc, avg: acc / (i + 1) });
+    });
+  } else {
+    const n = p.stops > 0 ? Math.min(p.stops, cities.length) : cities.length;
+    S.shown = [];
+    for (let i = 0; i < n; i++) { S.shown.push(i); S.rank[i] = i; S.rows.push({ idx: i, rank: i }); }
+  }
+  S.rowsShown = 0;
+  renderSummary();
+  renderTable(true);
+  renderSel();
+  el.results.hidden = false;
+  el.empty.style.display = 'none';
+  el.lgC.hidden = !p.search.all;
+  updateExport();
+  MV.setData({
+    center: { x: p.search.cx, z: p.search.cz }, start: { x: p.startx, z: p.startz },
+    radius: p.search.radius, route: (S.route && S.mode === 'route') ? S.route : null, loop: p.loop,
+  });
+  MV.fitResults();
+}
+
+function renderSummary() {
+  const p = S.params, cities = S.cities;
+  const withShip = cities.filter((c) => c.ships > 0).length;
+  const lines = [];
+  lines.push('<p>' + t('sumCities', { r: fmt(p.search.radius), n: fmt(S.ncity), w: fmt(withShip) }) + '</p>');
+  if (S.route && S.mode === 'route') {
+    const r = S.route, n = r.order.length;
+    let h = t('sumRoute', { n: fmt(n), stops: plural('pStop', n), len: fmt(r.total) });
+    if (n) h += t('sumAvg', { avg: fmt(r.total / n) });
+    h += r.loop ? t('sumLoopEnd') : t('sumEnd');
+    lines.push('<p>' + h + '</p>');
+    const gain = r.greedy > 0 ? (1 - r.total / r.greedy) * 100 : 0;
+    let sub = t('sumSub', {
+      g: fmt(r.greedy), f: fmt(r.first), r: r.restarts, att: plural('pAttempt', r.restarts), t: fmt(r.total),
+      gain: gain > 0.05 ? t('sumGain', { p: nf1.format(gain) }) : '',
+    });
+    if (p.stops > 0 && n < p.stops) sub += t('sumFewer');
+    lines.push('<p class="sub">' + sub + '</p>');
+  } else if (S.mode === 'list' || S.routeCancelled) {
+    lines.push('<p>' + t('sumList', { n: fmt(S.rows.length), x: p.search.cx, z: p.search.cz }) + '</p>');
+  }
+  el.sum.innerHTML = lines.join('');
+}
+
+/* ---------- таблица ---------- */
+function renderTable(reset) {
+  const isRoute = !!(S.route && S.mode === 'route');
+  const head = el.tbl.tHead, body = el.tbl.tBodies[0];
+  if (reset) {
+    head.innerHTML = isRoute
+      ? '<tr><th>' + t('thNum') + '</th><th>X</th><th>Y</th><th>Z</th><th>' + t('thLeg') + '</th><th>' + t('thTotal') + '</th><th>' + t('thAvg') + '</th></tr>'
+      : '<tr><th>' + t('thNum') + '</th><th>X</th><th>Y</th><th>Z</th><th>' + t('thCenter') + '</th><th></th></tr>';
+    body.innerHTML = ''; S.rowsShown = 0;
+  }
+  const end = Math.min(S.rows.length, S.rowsShown + ROWS_STEP);
+  let h = '';
+  for (let i = S.rowsShown; i < end; i++) {
+    const r = S.rows[i], c = S.cities[r.idx];
+    const color = PAL[palIdx(r.rank, S.rows.length)];
+    const num = '<td><span class="sw" style="background:' + color + '"></span>' + (i + 1) + '</td>';
+    if (isRoute) {
+      h += '<tr data-i="' + r.idx + '">' + num + '<td>' + c.sx + '</td><td>' + c.sy + '</td><td>' + c.sz + '</td><td>' + fmt(r.leg) + '</td><td>' + fmt(r.acc) + '</td><td>' + fmt(r.avg) + '</td></tr>';
+    } else {
+      h += '<tr data-i="' + r.idx + '">' + num + '<td>' + c.sx + '</td><td>' + c.sy + '</td><td>' + c.sz + '</td><td>' + fmt(c.dist) + '</td>' +
+           (c.ships ? '<td></td>' : '<td class="nos">' + t('noShip') + '</td>') + '</tr>';
+    }
+  }
+  body.insertAdjacentHTML('beforeend', h);
+  S.rowsShown = end;
+  const left = S.rows.length - end;
+  el.more.hidden = left <= 0;
+  el.moreBtn.textContent = t('more', { n: Math.min(ROWS_STEP, left) }) + (left > ROWS_STEP ? t('moreLeft', { left }) : '');
+  markRows();
+}
+el.moreBtn.addEventListener('click', () => renderTable(false));
+
+function rowFor(idx) { return el.tbl.tBodies[0].querySelector('tr[data-i="' + idx + '"]'); }
+function markRows() {
+  const body = el.tbl.tBodies[0];
+  body.querySelectorAll('tr.on').forEach((r) => r.classList.remove('on'));
+  if (S.sel >= 0) { const r = rowFor(S.sel); if (r) r.classList.add('on'); }
+}
+el.tbl.tBodies[0].addEventListener('click', (e) => {
+  const tr = e.target.closest('tr'); if (!tr) return;
+  select(+tr.dataset.i, true, false);
+});
+el.tbl.tBodies[0].addEventListener('mouseover', (e) => {
+  const tr = e.target.closest('tr'); if (!tr) return;
+  MV.setHover(+tr.dataset.i);
+});
+el.tbl.tBodies[0].addEventListener('mouseleave', () => MV.setHover(-1));
+
+/* ---------- выбранная точка ---------- */
+function select(idx, focusMap, scrollRow) {
+  S.sel = idx;
+  renderSel(); markRows();
+  if (idx >= 0) {
+    if (focusMap) MV.focusOn(S.cities[idx]);
+    if (scrollRow) { const r = rowFor(idx); if (r) r.scrollIntoView({ block: 'nearest' }); }
+  }
+  MV.redraw();
+}
+function renderSel() {
+  const box = el.sel;
+  if (S.sel < 0) { box.className = 'sel'; box.innerHTML = ''; return; }
+  const c = S.cities[S.sel], rk = S.rank ? S.rank[S.sel] : -1, p = S.params;
+  const inRoute = S.route && S.mode === 'route' && rk >= 0;
+  const title = t(c.ships ? 'selShip' : 'selCity') + (rk >= 0 ? t(inRoute ? 'selStop' : 'selNum', { n: rk + 1 }) : t('selOut'));
+  const toPlayer = Math.hypot(c.sx - p.startx, c.sz - p.startz);
+  let h = '<h3>' + title + '</h3>' +
+    '<dl><dt>X</dt><dd>' + c.sx + '</dd></dl><dl><dt>Y</dt><dd>' + c.sy + '</dd></dl><dl><dt>Z</dt><dd>' + c.sz + '</dd></dl>' +
+    '<dl><dt>' + t('dtStart') + '</dt><dd>' + fmt(toPlayer) + '</dd></dl>';
+  if (inRoute) h += '<dl><dt>' + t('dtLeg') + '</dt><dd>' + fmt(S.route.legs[rk]) + '</dd></dl>';
+  h += '<dl><dt>' + t('dtCenter') + '</dt><dd>' + c.cx + ', ' + c.cz + '</dd></dl>' +
+    '<div class="btns"><button type="button" class="btn" data-act="xyz">' + t('bXYZ') + '</button><button type="button" class="btn" data-act="tp">' + t('bTp') + '</button><button type="button" class="btn" data-act="close">' + t('bClear') + '</button></div>';
+  box.className = 'sel on'; box.innerHTML = h;
+}
+el.sel.addEventListener('click', (e) => {
+  const b = e.target.closest('button[data-act]'); if (!b || S.sel < 0) return;
+  const c = S.cities[S.sel];
+  if (b.dataset.act === 'xyz') copyText(c.sx + ' ' + c.sy + ' ' + c.sz, t('toastXYZ'));
+  else if (b.dataset.act === 'tp') copyText('/tp @s ' + c.sx + ' ' + (c.sy + 25) + ' ' + c.sz, t('toastTp'));
+  else select(-1, false, false);
+});
+
+/* ---------- экспорт ---------- */
+function exportText() {
+  if (!S.params) return '';
+  if (S.fmt === 'csv') {
+    const isRoute = !!(S.route && S.mode === 'route');
+    let s = 'n,x,y,z,' + (isRoute ? 'leg,total,' : 'dist,') + 'city_x,city_z,has_ship\n';
+    S.rows.forEach((r, i) => {
+      const c = S.cities[r.idx];
+      s += (i + 1) + ',' + c.sx + ',' + c.sy + ',' + c.sz + ',' + (isRoute ? Math.round(r.leg) + ',' + Math.round(r.acc) : Math.round(c.dist)) + ',' + c.cx + ',' + c.cz + ',' + (c.ships ? 1 : 0) + '\n';
+    });
+    return s;
+  }
+  if (S.route && S.mode === 'route') return EndShip.xaeroRoute(S.cities, S.route);
+  return EndShip.xaeroList(S.rows.map((r) => S.cities[r.idx]));
+}
+function updateExport() {
+  el.out.value = exportText();
+  el.fx.setAttribute('aria-pressed', S.fmt === 'xaero');
+  el.fc.setAttribute('aria-pressed', S.fmt === 'csv');
+  el.outHint.hidden = S.fmt !== 'xaero';
+}
+el.fx.addEventListener('click', () => { S.fmt = 'xaero'; updateExport(); });
+el.fc.addEventListener('click', () => { S.fmt = 'csv'; updateExport(); });
+el.copyOut.addEventListener('click', () => copyText(el.out.value, t(S.fmt === 'csv' ? 'copiedC' : 'copiedX')));
+el.saveOut.addEventListener('click', async () => {
+  const text = el.out.value; if (!text) return;
+  const filename = S.fmt === 'csv' ? 'end-ships.csv' : 'end-ships-waypoints.txt';
+  if (downloads) {
+    try { await downloads.save({ filename, data: text }); toast(t('saved')); return; }
+    catch (err) { if (err && err.code === 'declined') return; /* иначе пробуем обычный способ */ }
+  }
+  try {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([text], { type: 'text/plain;charset=utf-8' }));
+    a.download = filename; document.body.appendChild(a); a.click(); a.remove();
+  } catch (e) { copyText(text, t('saveFallback')); }
+});
+
+/* ==========================================================================
+   Карта
+   ========================================================================== */
+const MV = (() => {
+  const cv = el.map, ctx = cv.getContext('2d');
+  const K_MIN = 0.0008, K_MAX = 8;
+  const C = { bg: '#0e0919', grid: 'rgba(200,185,255,.07)', axis: 'rgba(200,185,255,.22)', label: '#8d82ab',
+              island: '#2a2346', islandEdge: '#5a4b8a', ring: '#6a5a9c', radius: '#e8de9e', dim: '#7d6fa8', city: '#75699b' };
+  const st = { w: 0, h: 0, ctlLeft: 1e9, dpr: 1, cx: 0, cz: 0, k: 0.05, data: null, hover: -1, dirty: false };
+  const stars = []; { let s = 12345; const r = () => (s = (s * 1664525 + 1013904223) >>> 0) / 4294967296; for (let i = 0; i < 110; i++) stars.push([r(), r(), r() * 1.2 + .3, r() * .35 + .1]); }
+
+  const sx = (x) => st.w / 2 + (x - st.cx) * st.k;
+  const sy = (z) => st.h / 2 + (z - st.cz) * st.k;
+
+  function resize() {
+    const r = el.mapwrap.getBoundingClientRect();
+    st.dpr = Math.min(window.devicePixelRatio || 1, 2.5);
+    st.w = Math.max(50, r.width); st.h = Math.max(50, r.height);
+    st.ctlLeft = el.mapctl.offsetLeft - 36;
+    cv.width = Math.round(st.w * st.dpr); cv.height = Math.round(st.h * st.dpr);
+    redraw();
+  }
+  function redraw() { if (!st.dirty) { st.dirty = true; requestAnimationFrame(draw); } }
+
+  function pickStep(k) {
+    const steps = [50, 100, 200, 250, 500, 1000, 2000, 2500, 5000, 10000, 20000, 25000, 50000, 100000];
+    for (const s of steps) if (s * k >= 84) return s;
+    return 100000;
+  }
+
+  function diamond(x, y, r) {
+    ctx.beginPath(); ctx.moveTo(x, y - r); ctx.lineTo(x + r, y); ctx.lineTo(x, y + r); ctx.lineTo(x - r, y); ctx.closePath();
+  }
+
+  function draw() {
+    st.dirty = false;
+    const w = st.w, h = st.h, k = st.k, d = st.data;
+    ctx.setTransform(st.dpr, 0, 0, st.dpr, 0, 0);
+    ctx.fillStyle = C.bg; ctx.fillRect(0, 0, w, h);
+    for (const s of stars) { ctx.fillStyle = 'rgba(220,210,255,' + s[3] + ')'; ctx.fillRect(Math.floor(s[0] * w), Math.floor(s[1] * h), s[2], s[2]); }
+
+    // сетка
+    const step = pickStep(k);
+    const minX = st.cx - w / 2 / k, maxX = st.cx + w / 2 / k, minZ = st.cz - h / 2 / k, maxZ = st.cz + h / 2 / k;
+    ctx.lineWidth = 1; ctx.font = '11px "IBM Plex Sans", system-ui, sans-serif'; ctx.textBaseline = 'alphabetic';
+    for (let x = Math.ceil(minX / step) * step; x <= maxX; x += step) {
+      const px = Math.round(sx(x)) + .5;
+      ctx.strokeStyle = x === 0 ? C.axis : C.grid; ctx.beginPath(); ctx.moveTo(px, 0); ctx.lineTo(px, h); ctx.stroke();
+      if (px < st.ctlLeft) { ctx.fillStyle = C.label; ctx.textAlign = 'left'; ctx.fillText(fmt(x || 0), px + 4, 13); }
+    }
+    for (let z = Math.ceil(minZ / step) * step; z <= maxZ; z += step) {
+      const py = Math.round(sy(z)) + .5;
+      ctx.strokeStyle = z === 0 ? C.axis : C.grid; ctx.beginPath(); ctx.moveTo(0, py); ctx.lineTo(w, py); ctx.stroke();
+      ctx.fillStyle = C.label; ctx.textAlign = 'left'; ctx.fillText(fmt(z || 0), 5, py - 4);
+    }
+
+    // главный остров и зона без городов
+    const ox = sx(0), oy = sy(0);
+    ctx.beginPath(); ctx.arc(ox, oy, Math.max(100 * k, 1.5), 0, 6.2832);
+    ctx.fillStyle = C.island; ctx.fill(); ctx.strokeStyle = C.islandEdge; ctx.lineWidth = 1; ctx.stroke();
+    ctx.beginPath(); ctx.arc(ox, oy, 1008 * k, 0, 6.2832);
+    ctx.setLineDash([3, 5]); ctx.strokeStyle = C.ring; ctx.lineWidth = 1.2; ctx.stroke(); ctx.setLineDash([]);
+    if (1008 * k > 40 && oy - 1008 * k - 6 > 52) { ctx.fillStyle = C.label; ctx.textAlign = 'center'; ctx.fillText(t('mapRing'), ox, oy - 1008 * k - 6); }
+
+    if (!d) { ctx.textAlign = 'start'; return; }
+
+    // радиус поиска
+    ctx.beginPath(); ctx.arc(sx(d.center.x), sy(d.center.z), d.radius * k, 0, 6.2832);
+    ctx.fillStyle = 'rgba(232,222,158,.035)'; ctx.fill();
+    ctx.setLineDash([7, 6]); ctx.strokeStyle = 'rgba(232,222,158,.5)'; ctx.lineWidth = 1.2; ctx.stroke(); ctx.setLineDash([]);
+
+    const cities = S.cities, rank = S.rank;
+    const nShown = S.shown.length;
+
+    // маршрут (под маркерами)
+    if (d.route && nShown) {
+      const pts = [[d.start.x, d.start.z]];
+      d.route.order.forEach((i) => pts.push([cities[i].sx, cities[i].sz]));
+      ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      for (let i = 1; i < pts.length; i++) {
+        const x0 = sx(pts[i - 1][0]), y0 = sy(pts[i - 1][1]), x1 = sx(pts[i][0]), y1 = sy(pts[i][1]);
+        ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1);
+        ctx.strokeStyle = 'rgba(255,255,255,.22)'; ctx.lineWidth = 5; ctx.stroke();
+        ctx.strokeStyle = PAL[palIdx(i - 1, nShown)]; ctx.lineWidth = 2.4; ctx.stroke();
+        const len = Math.hypot(x1 - x0, y1 - y0);
+        if (len > 46) {
+          const a = Math.atan2(y1 - y0, x1 - x0), mx = (x0 + x1) / 2, my = (y0 + y1) / 2;
+          ctx.save(); ctx.translate(mx, my); ctx.rotate(a);
+          ctx.beginPath(); ctx.moveTo(5, 0); ctx.lineTo(-4, -4.5); ctx.lineTo(-4, 4.5); ctx.closePath();
+          ctx.fillStyle = PAL[palIdx(i - 1, nShown)]; ctx.strokeStyle = 'rgba(14,9,25,.85)'; ctx.lineWidth = 1.5; ctx.stroke(); ctx.fill(); ctx.restore();
+        }
+      }
+      if (d.loop && pts.length > 1) {
+        const l = pts[pts.length - 1];
+        ctx.beginPath(); ctx.moveTo(sx(l[0]), sy(l[1])); ctx.lineTo(sx(pts[0][0]), sy(pts[0][1]));
+        ctx.setLineDash([6, 6]); ctx.strokeStyle = 'rgba(200,190,235,.7)'; ctx.lineWidth = 1.8; ctx.stroke(); ctx.setLineDash([]);
+      }
+    }
+
+    // маркеры: сначала фоновые, потом выбранные
+    const inV = (x, y) => x > -12 && x < w + 12 && y > -12 && y < h + 12;
+    for (let i = 0; i < cities.length; i++) {
+      if (rank[i] >= 0) continue;
+      const c = cities[i], x = sx(c.sx), y = sy(c.sz);
+      if (!inV(x, y)) continue;
+      if (c.ships) { diamond(x, y, 3.6); ctx.fillStyle = C.dim; ctx.globalAlpha = .85; ctx.fill(); ctx.globalAlpha = 1; }
+      else { ctx.beginPath(); ctx.arc(x, y, 3, 0, 6.2832); ctx.strokeStyle = C.city; ctx.lineWidth = 1.2; ctx.stroke(); }
+    }
+    const showNums = nShown <= 90 || k > 0.06;
+    for (let j = nShown - 1; j >= 0; j--) {
+      const i = S.shown[j], c = cities[i], x = sx(c.sx), y = sy(c.sz);
+      if (!inV(x, y)) continue;
+      diamond(x, y, 7); ctx.fillStyle = PAL[palIdx(j, nShown)]; ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,255,.92)'; ctx.lineWidth = 1.4; ctx.stroke();
+      if (showNums) {
+        ctx.font = '600 11px "IBM Plex Sans", system-ui, sans-serif'; ctx.textAlign = 'left';
+        ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(14,9,25,.95)'; ctx.strokeText(String(j + 1), x + 9, y - 7);
+        ctx.fillStyle = '#f3eefc'; ctx.fillText(String(j + 1), x + 9, y - 7);
+      }
+    }
+
+    // выбранная и наведённая
+    for (const i of [st.hover, S.sel]) {
+      if (i < 0 || !cities[i]) continue;
+      const c = cities[i], x = sx(c.sx), y = sy(c.sz);
+      ctx.beginPath(); ctx.arc(x, y, i === S.sel ? 13 : 11, 0, 6.2832);
+      ctx.strokeStyle = i === S.sel ? '#ffffff' : 'rgba(255,255,255,.6)'; ctx.lineWidth = i === S.sel ? 2 : 1.4; ctx.stroke();
+    }
+
+    // старт
+    const stx = sx(d.start.x), sty = sy(d.start.z);
+    ctx.beginPath(); ctx.arc(stx, sty, 6, 0, 6.2832); ctx.fillStyle = '#0e0919'; ctx.fill();
+    ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.beginPath(); ctx.arc(stx, sty, 2, 0, 6.2832); ctx.fillStyle = '#ffffff'; ctx.fill();
+    ctx.font = '600 11px "IBM Plex Sans", system-ui, sans-serif'; ctx.textAlign = 'left';
+    ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(14,9,25,.95)'; ctx.strokeText(t('mapYou'), stx + 10, sty + 4);
+    ctx.fillStyle = '#ffffff'; ctx.fillText(t('mapYou'), stx + 10, sty + 4);
+    ctx.textAlign = 'start';
+  }
+
+  /* --- навигация --- */
+  function setView(cx, cz, k) { st.cx = cx; st.cz = cz; st.k = clamp(k, K_MIN, K_MAX); redraw(); }
+  function zoomAt(px, py, f) {
+    const wx = st.cx + (px - st.w / 2) / st.k, wz = st.cz + (py - st.h / 2) / st.k;
+    const k2 = clamp(st.k * f, K_MIN, K_MAX);
+    st.cx = wx - (px - st.w / 2) / k2; st.cz = wz - (py - st.h / 2) / k2; st.k = k2; redraw();
+  }
+  function fitBox(x0, z0, x1, z1) {
+    const pad = 46;
+    const bw = Math.max(x1 - x0, 300), bh = Math.max(z1 - z0, 300);
+    setView((x0 + x1) / 2, (z0 + z1) / 2, Math.min((st.w - 2 * pad) / bw, (st.h - 2 * pad) / bh));
+  }
+  function fitRadius() {
+    const d = st.data; if (!d) { setView(0, 0, Math.min(st.w, st.h) / 6000); return; }
+    fitBox(d.center.x - d.radius, d.center.z - d.radius, d.center.x + d.radius, d.center.z + d.radius);
+  }
+  function fitResults() {
+    const d = st.data; if (!d) return;
+    if (!S.shown.length) { fitRadius(); return; }
+    let x0 = d.start.x, x1 = d.start.x, z0 = d.start.z, z1 = d.start.z;
+    S.shown.forEach((i) => { const c = S.cities[i]; x0 = Math.min(x0, c.sx); x1 = Math.max(x1, c.sx); z0 = Math.min(z0, c.sz); z1 = Math.max(z1, c.sz); });
+    fitBox(x0, z0, x1, z1);
+  }
+  function focusOn(c) {
+    const k = Math.max(st.k, 0.06);
+    setView(c.sx, c.sz, k);
+  }
+
+  /* --- попадание в маркер --- */
+  function hit(px, py) {
+    if (!st.data) return -1;
+    let best = -1, bd = 14 * 14;
+    const cities = S.cities;
+    for (let i = 0; i < cities.length; i++) {
+      const c = cities[i], dx = sx(c.sx) - px, dy = sy(c.sz) - py, dd = dx * dx + dy * dy;
+      const bonus = S.rank[i] >= 0 ? 0.6 : 1;
+      if (dd * bonus < bd) { bd = dd * bonus; best = i; }
+    }
+    return best;
+  }
+  function showTip(i, px, py) {
+    const tip = el.tip;
+    if (i < 0) { tip.style.display = 'none'; return; }
+    const c = S.cities[i], rk = S.rank[i], d = st.data;
+    const inRoute = d.route && rk >= 0;
+    let s = '<b>' + t(c.ships ? 'selShip' : 'selCity') + (rk >= 0 ? t(inRoute ? 'tipStop' : 'tipNum', { n: rk + 1 }) : '') + '</b><br>X ' + c.sx + '  Y ' + c.sy + '  Z ' + c.sz +
+            '<br>' + t('tipFrom', { d: fmt(Math.hypot(c.sx - d.start.x, c.sz - d.start.z)) });
+    if (inRoute) s += '<br>' + t('tipLeg', { d: fmt(d.route.legs[rk]) });
+    tip.innerHTML = s; tip.style.display = 'block';
+    const tw = tip.offsetWidth, th = tip.offsetHeight;
+    let x = px + 14, y = py + 14;
+    if (x + tw > st.w - 6) x = px - tw - 14;
+    if (y + th > st.h - 6) y = py - th - 14;
+    tip.style.left = Math.max(6, x) + 'px'; tip.style.top = Math.max(6, y) + 'px';
+  }
+
+  /* --- указатель --- */
+  const ptrs = new Map();
+  let drag = null, pinch = null;
+  cv.addEventListener('pointerdown', (e) => {
+    cv.setPointerCapture(e.pointerId);
+    ptrs.set(e.pointerId, { x: e.offsetX, y: e.offsetY });
+    if (ptrs.size === 1) drag = { x: e.offsetX, y: e.offsetY, cx: st.cx, cz: st.cz, moved: false };
+    else if (ptrs.size === 2) {
+      const [a, b] = [...ptrs.values()];
+      pinch = { d: Math.hypot(a.x - b.x, a.y - b.y), k: st.k }; drag = null;
+    }
+    el.tip.style.display = 'none';
+  });
+  cv.addEventListener('pointermove', (e) => {
+    const px = e.offsetX, py = e.offsetY;
+    if (ptrs.has(e.pointerId)) ptrs.set(e.pointerId, { x: px, y: py });
+    if (pinch && ptrs.size >= 2) {
+      const [a, b] = [...ptrs.values()];
+      const d = Math.hypot(a.x - b.x, a.y - b.y);
+      const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+      zoomAt(mx, my, (pinch.k * d / pinch.d) / st.k);
+      return;
+    }
+    if (drag) {
+      const dx = px - drag.x, dy = py - drag.y;
+      if (!drag.moved && Math.hypot(dx, dy) > 4) { drag.moved = true; cv.classList.add('drag'); }
+      if (drag.moved) { st.cx = drag.cx - dx / st.k; st.cz = drag.cz - dy / st.k; redraw(); }
+      return;
+    }
+    if (e.pointerType === 'mouse') {
+      const i = hit(px, py);
+      if (i !== st.hover) { st.hover = i; redraw(); }
+      showTip(i, px, py);
+    }
+  });
+  const endPtr = (e) => {
+    const wasClick = drag && !drag.moved && ptrs.size === 1;
+    ptrs.delete(e.pointerId);
+    if (ptrs.size < 2) pinch = null;
+    cv.classList.remove('drag');
+    if (wasClick && e.type === 'pointerup') {
+      const i = hit(e.offsetX, e.offsetY);
+      select(i, false, true);
+    }
+    if (ptrs.size === 0) drag = null;
+  };
+  cv.addEventListener('pointerup', endPtr);
+  cv.addEventListener('pointercancel', endPtr);
+  cv.addEventListener('pointerleave', () => { if (!drag) { el.tip.style.display = 'none'; if (st.hover >= 0) { st.hover = -1; redraw(); } } });
+  cv.addEventListener('wheel', (e) => { e.preventDefault(); zoomAt(e.offsetX, e.offsetY, Math.exp(-e.deltaY * 0.0016)); }, { passive: false });
+  cv.addEventListener('dblclick', (e) => zoomAt(e.offsetX, e.offsetY, 1.8));
+  cv.addEventListener('keydown', (e) => {
+    const m = st.w * 0.15 / st.k;
+    switch (e.key) {
+      case 'ArrowLeft': st.cx -= m; break;
+      case 'ArrowRight': st.cx += m; break;
+      case 'ArrowUp': st.cz -= m; break;
+      case 'ArrowDown': st.cz += m; break;
+      case '+': case '=': zoomAt(st.w / 2, st.h / 2, 1.4); return;
+      case '-': case '_': zoomAt(st.w / 2, st.h / 2, 1 / 1.4); return;
+      case 'Home': fitResults(); return;
+      default: return;
+    }
+    e.preventDefault(); redraw();
+  });
+  el.zin.addEventListener('click', () => zoomAt(st.w / 2, st.h / 2, 1.5));
+  el.zout.addEventListener('click', () => zoomAt(st.w / 2, st.h / 2, 1 / 1.5));
+  el.zfit.addEventListener('click', fitResults);
+  el.zrad.addEventListener('click', fitRadius);
+
+  new ResizeObserver(resize).observe(el.mapwrap);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(redraw);
+
+  return {
+    setData(d) { st.data = d; st.hover = -1; },
+    setHover(i) { if (st.hover !== i) { st.hover = i; redraw(); } },
+    fitResults, fitRadius, focusOn, redraw, resize,
+  };
+})();
+
+/* ---------- язык ---------- */
+function applyLang(lang, persist) {
+  LANG = I18N[lang] ? lang : 'en';
+  const loc = LANG === 'ru' ? 'ru-RU' : 'en-US';
+  nf = new Intl.NumberFormat(loc);
+  nf1 = new Intl.NumberFormat(loc, { maximumFractionDigits: 1 });
+  nf2 = new Intl.NumberFormat(loc, { maximumFractionDigits: 2 });
+  document.documentElement.lang = LANG;
+  document.title = t('docTitle');
+  document.querySelectorAll('[data-i18n]').forEach((n) => { n.textContent = t(n.dataset.i18n); });
+  document.querySelectorAll('[data-i18n-html]').forEach((n) => { n.innerHTML = t(n.dataset.i18nHtml); });
+  document.querySelectorAll('[data-i18n-ph]').forEach((n) => { n.placeholder = t(n.dataset.i18nPh); });
+  document.querySelectorAll('[data-i18n-aria]').forEach((n) => { n.setAttribute('aria-label', t(n.dataset.i18nAria)); });
+  el.radiusChips.querySelectorAll('button[data-r]').forEach((b) => { b.textContent = nf.format(+b.dataset.r); });
+  document.querySelectorAll('.lang button').forEach((b) => b.setAttribute('aria-pressed', b.dataset.lang === LANG));
+  syncForm();
+  if (S.params) {
+    renderSummary(); renderTable(true); renderSel(); updateExport();
+  }
+  if (lastStatus && !S.running) setStatus(lastStatus.msg, lastStatus.kind);
+  MV.redraw();
+  if (persist) { try { localStorage.setItem(LANG_KEY, LANG); } catch (e) { /* не страшно */ } }
+}
+document.querySelector('.lang').addEventListener('click', (e) => {
+  const b = e.target.closest('button[data-lang]'); if (!b) return;
+  applyLang(b.dataset.lang, true);
+});
+
+/* ---------- старт ---------- */
+loadSettings();
+let savedLang = 'en';
+try { const l = localStorage.getItem(LANG_KEY); if (l && I18N[l]) savedLang = l; } catch (e) { /* по умолчанию английский */ }
+applyLang(savedLang, false);
+MV.resize();
+MV.fitRadius();
+})();
+</script>
+</body>
+</html>
